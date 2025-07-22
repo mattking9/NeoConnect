@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36221.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeoConnect", "NeoConnect.csproj", "{68F2A2D0-94BF-4997-9526-12BA4AC69AC9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeoConnect", "NeoConnect\NeoConnect.csproj", "{68F2A2D0-94BF-4997-9526-12BA4AC69AC9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeoConnect.UnitTests", "NeoConnect.UnitTests\NeoConnect.UnitTests.csproj", "{66DD6FA7-F1B0-C97F-E95D-97B73263AA88}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{68F2A2D0-94BF-4997-9526-12BA4AC69AC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{68F2A2D0-94BF-4997-9526-12BA4AC69AC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68F2A2D0-94BF-4997-9526-12BA4AC69AC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66DD6FA7-F1B0-C97F-E95D-97B73263AA88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66DD6FA7-F1B0-C97F-E95D-97B73263AA88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66DD6FA7-F1B0-C97F-E95D-97B73263AA88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66DD6FA7-F1B0-C97F-E95D-97B73263AA88}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
