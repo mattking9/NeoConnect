@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Net.WebSockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NeoConnect
 {
-    public class WeatherService
+    public class WeatherService : IWeatherService
     {
         private readonly ILogger<WeatherService> _logger;
         private readonly IConfiguration _config;

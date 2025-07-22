@@ -1,11 +1,14 @@
 ﻿namespace NeoConnect
 {
-    public class ActionsConfig
+    public class HeatingConfig
     {
-        public PreHeatOverride PreHeatOverride { get; set; }        
+        public string SummerProfileName { get; set; }
+        
+        public PreHeatOverrideConfig PreHeatOverride { get; set; } = new PreHeatOverrideConfig();      
+        public RecipeConfig Recipes { get; set; } = new RecipeConfig();
     }
 
-    public class PreHeatOverride
+    public class PreHeatOverrideConfig
     {
         /// <summary>
         /// The maximum number of hours that preheat will run for if it is not cancelled.
@@ -21,6 +24,13 @@
         /// If the current temperature of the room is this number of degrees below the target temperature then the preheat will not be cancelled.
         /// </summary>
         public decimal? MaxTempDifferenceForCancel { get; set; }
+    }
+
+    public class RecipeConfig
+    {
+        public decimal? ExternalTempThreshold { get; set; }
+        public string SummerRecipeName { get; set; }
+        public string WinterRecipeName { get; set; }
     }
 }
 

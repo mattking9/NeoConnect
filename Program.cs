@@ -20,12 +20,14 @@ namespace NeoConnect
 
             builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
-            builder.Services.Configure<ActionsConfig>(builder.Configuration.GetSection("Actions"));
+            builder.Services.Configure<HeatingConfig>(builder.Configuration.GetSection("HeatingConfig"));
 
-            builder.Services.AddSingleton<WeatherService>();
-            builder.Services.AddSingleton<NeoHubService>();
+            builder.Services.AddSingleton<IWeatherService, WeatherService>();
+            builder.Services.AddSingleton<IHeatingService, HeatingService>();
+            builder.Services.AddSingleton<INeoHubService, NeoHubService>();            
+            builder.Services.AddSingleton<IEmailService, EmailService>();
+
             builder.Services.AddSingleton<ActionsService>();
-            builder.Services.AddSingleton<EmailService>();
 
             builder.Services.AddHostedService<Worker>();
 
