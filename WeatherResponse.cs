@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 
 namespace NeoConnect
 {
@@ -20,8 +14,17 @@ namespace NeoConnect
 
     public class ForecastDay
     {
-        public DateOnly Date { get; set; }        
+        public DateOnly Date { get; set; }
+        public ForecastDayDaily Day { get; set; }
+
         public List<ForecastHour> Hour { get; set; } = new List<ForecastHour>();        
+
+    }
+
+    public class ForecastDayDaily
+    {
+        [JsonPropertyName("avgtemp_c")]
+        public decimal? AverageTemp { get; set; }
     }
 
     public class ForecastHour

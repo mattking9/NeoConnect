@@ -3,7 +3,7 @@ using System.Net.Mail;
 
 namespace NeoConnect
 {
-    public class EmailService
+    public class EmailService : IEmailService
     {
         private readonly ILogger<EmailService> _logger;
         private readonly IConfiguration _config;
@@ -27,37 +27,61 @@ namespace NeoConnect
 
         public async Task SendSummaryEmail(List<string> deviceStatements, CancellationToken stoppingToken)
         {
-            if(deviceStatements == null || !deviceStatements.Any())
-            {            
+            if (deviceStatements == null || !deviceStatements.Any())
+            {
                 return;
             }
 
-            _logger.LogInformation("Sending Summary Email...");
+            _logger.LogInformation("Sending Summary Email.");
 
+            await SendEmail(
+                "Neo Connect Summary",
+                $"Neo Connect made the following changes: <ul>{string.Join("", deviceStatements.Select(x => $"<li>{x}</li>"))}</ul>",
+                true,
+                stoppingToken);
+        }
+
+        public async Task SendErrorEmail(Exception error, CancellationToken stoppingToken)
+        {
+            if (error == null)
+            {
+                return;
+            }
+
+            _logger.LogInformation("Sending Error Email.");
+
+            await SendEmail(
+                "Neo Connect Error",
+                $"Neo Connect encountered the following error while executing: <h3>{error.Message}</h3><p>{error.StackTrace ?? "(Stack trace unavailable)"}</p>",
+                true,
+                stoppingToken);
+        }
+
+        private async Task SendEmail(string subject, string body, bool isHtml, CancellationToken stoppingToken)
+        {
             try
             {
                 using (var smtpClient = new SmtpClient(_smtpHost, _smtpPort))
                 {
-                    smtpClient.EnableSsl = true; 
+                    smtpClient.EnableSsl = true;
                     smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
                     smtpClient.UseDefaultCredentials = false;
                     smtpClient.Credentials = new NetworkCredential(_smtpUsername, _smtpPassword);
 
                     using (var mailMessage = new MailMessage(_smtpUsername, _smtpToAddress)
-                    {                        
-                        Subject = "Neo Connect Summary",
-                        Body = $"<ul>{string.Join("", deviceStatements.Select(x => $"<li>{x}</li>"))}</ul>",
-                        IsBodyHtml = true // Or false, depending on your email content
+                    {
+                        Subject = subject,
+                        Body = body,
+                        IsBodyHtml = isHtml
                     })
                     {
-                        smtpClient.Send(mailMessage);
+                        await smtpClient.SendMailAsync(mailMessage, stoppingToken);
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Handle the exception (log it, show an error message, etc.)
-                Console.WriteLine($"Error sending email: {ex.Message}");
+                _logger.LogError(ex, "Error sending email");
             }
         }
     }

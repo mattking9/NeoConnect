@@ -4,31 +4,31 @@ using System.Text.Json;
 
 namespace NeoConnect
 {
-    public class NeoHubService
+    public class NeoHubService : INeoHubService
     {
         private readonly ILogger<NeoHubService> _logger;
-        private readonly IConfiguration _config;        
+        private readonly IConfiguration _config;
         private readonly Uri _uri;
         private readonly string _key;
-        
+
         private ClientWebSocket _ws = null;
 
         public NeoHubService(ILogger<NeoHubService> logger, IConfiguration config)
         {
             _logger = logger;
             _config = config;
-            
+
             _uri = _config.GetValue<Uri>("NeoHub:Uri") ?? throw new ArgumentNullException("Config value for NeoHub.Uri is required");
             _key = _config.GetValue<string>("NeoHub:ApiKey") ?? throw new ArgumentNullException("Config value for NeoHub.ApiKey is required");
         }
-                
+
         public async Task Connect(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Connecting to NeoHub...");
 
             _ws = new ClientWebSocket();
-            _ws.Options.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;            
-            
+            _ws.Options.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
             try
             {
                 await _ws.ConnectAsync(_uri, cancellationToken);
@@ -46,8 +46,10 @@ namespace NeoConnect
 
         public async Task Disconnect(CancellationToken cancellationToken)
         {
-            if(_ws == null)
-            {                
+            _logger.LogInformation("Closing NeoHub connection.");
+
+            if (_ws == null)
+            {
                 return;
             }
 
@@ -66,15 +68,15 @@ namespace NeoConnect
             _ws = null;
         }
 
-        public async Task<NeoHubLiveData> GetLiveData(CancellationToken cancellationToken)
+        public async Task<List<NeoDevice>> GetDevices(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Fetching Live Data...");
 
             await SendMessage("GET_LIVE_DATA", "0", 1, cancellationToken);
 
             var result = await ReceiveMessage(cancellationToken);
-            return JsonSerializer.Deserialize<NeoHubLiveData>(result.ResponseJson) ?? throw new Exception($"Error parsing GET_LIVE_DATA json: {result.ResponseJson}");
-        }        
+            return JsonSerializer.Deserialize<NeoHubLiveData>(result.ResponseJson)?.Devices ?? throw new Exception($"Error parsing GET_LIVE_DATA json: {result.ResponseJson}");
+        }
 
         public async Task<Dictionary<string, EngineersData>> GetEngineersData(CancellationToken cancellationToken)
         {
@@ -94,6 +96,27 @@ namespace NeoConnect
 
             var profiles = JsonSerializer.Deserialize<Dictionary<string, Profile>>(result.ResponseJson) ?? throw new Exception($"Error parsing GET_PROFILES json: {result.ResponseJson}");
             return profiles.Values.ToList();
+        }
+
+        public async Task RunRecipe(string recipeName, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation($"Running recipe: {recipeName}.");
+
+            //await SendMessage("GET_PROFILES", "0", 1, cancellationToken);
+
+            //var result = await ReceiveMessage(cancellationToken);
+
+        }
+
+        public async Task SetPreheatDuration(string zoneName, int maxPreheatDuration, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation($"Setting preheat duration for {zoneName} to {maxPreheatDuration} hours.");
+
+
+            //await SendMessage("GET_PROFILES", "0", 1, cancellationToken);
+
+            //var result = await ReceiveMessage(cancellationToken);
+
         }
 
         private async Task SendMessage(string commandName, string commandValue, int commandId, CancellationToken cancellationToken)
@@ -118,7 +141,7 @@ namespace NeoConnect
             {
                 throw new InvalidOperationException("WebSocket is not connected.");
             }
-            
+
             _logger.LogDebug("Sending Command:\r\n" + message);
 
             var bytes = Encoding.UTF8.GetBytes(message);
@@ -132,7 +155,7 @@ namespace NeoConnect
             {
                 throw new InvalidOperationException("WebSocket is not connected.");
             }
-            
+
             var buffer = new byte[1024];
             var segment = new ArraySegment<byte>(buffer);
 
