@@ -23,7 +23,7 @@ namespace NeoConnect
 
         public async Task<Forecast> GetForecast(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Getting weather forecast...");
+            _logger.LogInformation("Getting weather forecast.");
 
             using (HttpClient client = new HttpClient())
             {

@@ -1,4 +1,5 @@
 ﻿
+
 namespace NeoConnect
 {
     public interface INeoHubService
@@ -8,6 +9,7 @@ namespace NeoConnect
         Task<List<Profile>> GetAllProfiles(CancellationToken cancellationToken);
         Task<List<NeoDevice>> GetDevices(CancellationToken cancellationToken);
         Task<Dictionary<string, EngineersData>> GetEngineersData(CancellationToken cancellationToken);
+        ComfortLevel? GetNextSwitchingInterval(ProfileSchedule schedule, DateTime? relativeTo);
         Task RunRecipe(string recipeName, CancellationToken cancellationToken);
         Task SetPreheatDuration(string zoneName, int maxPreheatDuration, CancellationToken cancellationToken);
     }

@@ -13,6 +13,10 @@ namespace NeoConnect
 
         private ClientWebSocket _ws = null;
 
+        public NeoHubService()
+        {                
+        }
+
         public NeoHubService(ILogger<NeoHubService> logger, IConfiguration config)
         {
             _logger = logger;
@@ -24,7 +28,7 @@ namespace NeoConnect
 
         public async Task Connect(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Connecting to NeoHub...");
+            _logger.LogInformation("Connecting to NeoHub.");
 
             _ws = new ClientWebSocket();
             _ws.Options.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
@@ -70,7 +74,7 @@ namespace NeoConnect
 
         public async Task<List<NeoDevice>> GetDevices(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Fetching Live Data...");
+            _logger.LogInformation("Fetching Devices.");
 
             await SendMessage("GET_LIVE_DATA", "0", 1, cancellationToken);
 
@@ -88,7 +92,7 @@ namespace NeoConnect
 
         public async Task<List<Profile>> GetAllProfiles(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Fetching Profiles...");
+            _logger.LogInformation("Fetching Profiles.");
 
             await SendMessage("GET_PROFILES", "0", 2, cancellationToken);
 
@@ -117,6 +121,34 @@ namespace NeoConnect
 
             //var result = await ReceiveMessage(cancellationToken);
 
+        }
+
+        public ComfortLevel? GetNextSwitchingInterval(ProfileSchedule schedule, DateTime? relativeTo)
+        {
+            var date = relativeTo ?? DateTime.Now;
+            if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
+            {
+                // Use weekend schedule
+                return GetNextSwitchingInterval(schedule.Weekends, TimeOnly.FromDateTime(date));
+            }
+            else
+            {
+                // Use weekday schedule
+                return GetNextSwitchingInterval(schedule.Weekdays, TimeOnly.FromDateTime(date));
+            }
+        }
+
+        private ComfortLevel? GetNextSwitchingInterval(ProfileScheduleGroup scheduleGroup, TimeOnly? relativeTo)
+        {
+            return new ComfortLevel[] 
+            { 
+                new ComfortLevel(scheduleGroup.Wake), 
+                new ComfortLevel(scheduleGroup.Leave),
+                new ComfortLevel(scheduleGroup.Return),
+                new ComfortLevel(scheduleGroup.Sleep)
+            }
+            .OrderBy(i => i.Time)
+            .FirstOrDefault(i => i.Time > relativeTo);
         }
 
         private async Task SendMessage(string commandName, string commandValue, int commandId, CancellationToken cancellationToken)
