@@ -35,51 +35,15 @@ namespace NeoConnect
             await _neoHub.Disconnect(stoppingToken);
         }
 
-        /// <summary>
-        /// Problem: if its going to get warmer in the next hour (because of heat from sun), don't start heating
-        /// 
-        /// e.g.
-        /// at 7am
-        /// stat says 18
-        /// setting is 20
-        /// 
-        /// so stat will call
-        /// 
-        /// but outside temperature is due to reach x at 8am, naturally raising the temperature to 20+.
-        /// 
-        ///     this is exacerbated by preheat, which will start calling 2 hours before 7am
-        /// 
-        /// Question: What outside temp causes room temp to rise organically from 18 to 20?
-        /// 
-        /// Changing the differential wont work:
-        ///             if set temp is 20
-        /// and diff is 3
-        /// then preheat will stop heating at 7am if temp is 17 and that is no good
-        /// 
-        /// We need to turn off preheat if temp is expected to be 'naturally' high
-        /// This means that at 7am
-        /// room will start heating if less than 19.5   (assuming 0.5 diff)
-        /// 
-        /// BUT
-        /// 
-        /// 
-        /// it is important that we don't allow the room to be uncomfortably cold at 7am just because it is due to get warm later!
-        /// therefore need condition that room must not be lower than x
-        /// 
-        /// e.g. if expected to by warm and temp not less than x below at 7am
-        /// </summary>
-        /// <param name="forecastToday"></param>
-        /// <param name="stoppingToken"></param>
-        /// <returns></returns>
         public async Task SetPreheatDurationBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken)
         {
             var threshold = _config.PreHeatOverride.ExternalTempThresholdForCancel;
             var maxTempDifference = _config.PreHeatOverride.MaxTempDifferenceForCancel;
-            var defaultDuration = _config.PreHeatOverride.DefaultPreheatDuration;
+            var defaultDuration = _config.PreHeatOverride.DefaultPreheatDuration ?? 2;
 
-            _logger.LogDebug($"ExternalTempThresholdForCancel: {threshold}");
-            _logger.LogDebug($"MaxTempDifferenceForCancel: {maxTempDifference}");
-            _logger.LogDebug($"DefaultPreheatDuration: {defaultDuration}");
+            _logger.LogDebug($"ExternalTempThresholdForCancel: {threshold}c");
+            _logger.LogDebug($"MaxTempDifferenceForCancel: {maxTempDifference}c");
+            _logger.LogDebug($"DefaultPreheatDuration: {defaultDuration}h");
 
             var devices = await _neoHub.GetDevices(stoppingToken);
             var profiles = await _neoHub.GetAllProfiles(stoppingToken);
@@ -89,15 +53,22 @@ namespace NeoConnect
 
             foreach (var device in devices.Where(d => d.IsThermostat && !d.IsOffline))
             {
-                var deviceProfile = profiles.FirstOrDefault(p => p.ProfileId == device.ActiveProfile);
+                var deviceProfile = profiles.SingleOrDefault(p => p.ProfileId == device.ActiveProfile);
 
-                if (deviceProfile != null && deviceProfile.ProfileName == _config.SummerProfileName)
+                if (deviceProfile == null)
                 {
-                    _logger.LogInformation($"Skipping preheat override for {device.ZoneName} as it is set to Summer Mode.");
+                    _logger.LogInformation($"Ignoring {device.ZoneName} as no profile set.");
                     continue;
                 }
 
-                var nextInterval = deviceProfile?.Schedule.GetNextSwitchingInterval();
+                if (deviceProfile.ProfileName == _config.SummerProfileName)
+                {
+                    _logger.LogInformation($"Ignoring {device.ZoneName} as Summer Profile is active.");
+                    continue;
+                }
+
+                //get the next switching interval that is at least 2 hours from now (or whatever the default duration is)
+                var nextInterval = _neoHub.GetNextSwitchingInterval(deviceProfile.Schedule, DateTime.Now.AddHours(defaultDuration));
 
                 //if nextInterval is null then no more intervals today, therefore do nothing
                 if (nextInterval == null)
@@ -116,7 +87,7 @@ namespace NeoConnect
                 var internalTempDifference = nextInterval.TargetTemp - decimal.Parse(device.ActualTemp);
 
                 // 'Normal' Preheat is 2 hours for all stats
-                var maxPreheatDuration = defaultDuration.GetValueOrDefault(2);
+                var maxPreheatDuration = defaultDuration;
 
                 // If forecast temp is higher than the threshold and the actual temp now is within 2 degrees of target temp at the next switching
                 // interval then cancel preheat
@@ -141,13 +112,7 @@ namespace NeoConnect
             profiles.Clear();
             engineersData.Clear();
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="forecastToday"></param>
-        /// <param name="stoppingToken"></param>
-        /// <returns></returns>
+        
         public async Task RunRecipeBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken)
         {
             _logger.LogDebug($"ExternalTempThreshold: {_config.Recipes.ExternalTempThreshold}");

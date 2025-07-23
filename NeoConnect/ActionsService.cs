@@ -17,7 +17,7 @@ namespace NeoConnect
 
         public async Task PerformActions(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Running...");
+            _logger.LogInformation("Starting Actions.");
 
             try
             {

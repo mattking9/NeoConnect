@@ -45,9 +45,6 @@ namespace NeoConnect
         [JsonPropertyName("THERMOSTAT")]
         public bool IsThermostat { get; set; }
 
-        [JsonPropertyName("TIMECLOCK")]
-        public bool IsProgrammer { get; set; }
-
         [JsonPropertyName("OFFLINE")]
         public bool IsOffline { get; set; }
     }
@@ -70,22 +67,7 @@ namespace NeoConnect
         public ProfileScheduleGroup Weekdays { get; set; }
 
         [JsonPropertyName("sunday")]
-        public ProfileScheduleGroup Weekends { get; set; }
-
-        public ComfortLevel GetNextSwitchingInterval(DateTime? relativeTo = null)
-        {
-            var date = relativeTo ?? DateTime.Now;
-            if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
-            {
-                // Use weekend schedule
-                return Weekends.GetNextSwitchingInterval(date.Hour);
-            }
-            else
-            {
-                // Use weekday schedule
-                return Weekdays.GetNextSwitchingInterval(date.Hour);
-            }
-        }        
+        public ProfileScheduleGroup Weekends { get; set; }              
     }
 
     public class ProfileScheduleGroup
@@ -111,25 +93,7 @@ namespace NeoConnect
                 new ComfortLevel(Sleep)
             }.OrderBy(i => i.Time);
         
-        internal ComfortLevel GetNextSwitchingInterval(int hour)
-        {
-            return this.ToComfortLevels().FirstOrDefault(i => i.Time.Hour > hour);
-        }
-    }
-
-    public class ComfortLevel
-    {
-        public ComfortLevel(object[] interval)
-        {
-            if (interval != null && interval.Length >= 2)
-            {
-                Time = TimeOnly.Parse(interval[0].ToString());
-                TargetTemp = decimal.Parse(interval[1].ToString());
-            }
-        }
-
-        public TimeOnly Time { get; private set; }
-        public decimal TargetTemp { get; private set; }
+        
     }
 
     public class EngineersData
