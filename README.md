@@ -1,11 +1,11 @@
 # NeoConnect
 
-NeoConnect is a cross-platform .NET Worker Service designed to automate and optimize heating systems based on weather conditions and user-defined recipes. It integrates with NeoHub devices to manage heating profiles, preheat durations, and execute automation recipes, ensuring efficient and comfortable heating control.
+NeoConnect is a cross-platform service designed to automate and optimize Heatmiser Neo smart heating systems by adding intelligent overrides based on external weather conditions.
 
 ## Features
 
 - **Automated Heating Management:**
-  - Adjusts preheat durations for thermostats based on the weather forecast for the day ahead to avoid unnecessary heating when natural temperature increases are expected.
+  - Adjusts preheat times for individual thermostats based on the weather forecast for the day ahead to avoid unnecessary heating when natural temperature increases are expected.
   - Runs user-defined recipes (e.g. switching between winter and summer profiles) based on the forecast external temperature.
   - User-configurable schedule.
   - Email notifications for all changes or issues.
@@ -19,6 +19,25 @@ NeoConnect is a cross-platform .NET Worker Service designed to automate and opti
 ## Cross-Platform Service
 
 NeoConnect is implemented as a .NET Worker Service using the `BackgroundService` class, making it suitable for running as a background service on both Windows and Linux (systemd) environments. It targets .NET 8, ensuring compatibility across major platforms.
+
+## Configuration
+
+Configuration is managed via appsettings.json or environment variables. Key settings include:
+- NeoHub connection details
+- Heating variables and threshold values
+- Weather API integration
+- SMTP configuration
+
+## Usage
+
+- While running, the service will automatically connect to the specified NeoHub, retrieve schedules and weather data, and adjust heating settings on the connected NeoStat devices as appropriate.
+- The default schedule is set to run once every day at 2:00 AM. This can be overriden via appsettings or environment variables.
+- All actions and changes are logged for review.
+
+## Requirements
+
+- .NET 8 SDK or runtime
+- Docker (optional, for containerized deployments)
 
 ## Running in Docker
 
@@ -42,24 +61,6 @@ NeoConnect can be containerized and run in Docker for easy deployment and manage
       -e Smtp__ToAddress=to@recipient.com \
    ```
    Adjust environment variables and volume mounts as needed for your configuration files.
-
-## Configuration
-
-Configuration is managed via appsettings.json or environment variables. Key settings include:
-- NeoHub connection details
-- Heating profiles and recipes
-- Weather API integration
-
-## Usage
-
-- The service will automatically connect to the specified NeoHub, retrieve schedules and weather data, and adjust heating settings on the connected thermostat devices as appropriate.
-- The default schedule is set to run once every day at 2:00 AM. This can be overriden via appsettings or environment variables.
-- All actions and changes are logged for review.
-
-## Requirements
-
-- .NET 8 SDK or runtime
-- Docker (optional, for containerized deployments)
 
 ## License
 
