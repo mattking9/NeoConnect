@@ -7,14 +7,12 @@ NeoConnect is a cross-platform service designed to automate and optimize Heatmis
 - **Automated Heating Management:**
   - Adjusts preheat times for individual thermostats based on the weather forecast for the day ahead to avoid unnecessary heating when natural temperature increases are expected.
   - Runs user-defined recipes (e.g. switching between winter and summer profiles) based on the forecast external temperature.
-  - User-configurable schedule.
-  - Email notifications for all changes or issues.
-- **NeoHub Integration:**
-  - Connects to NeoHub devices to retrieve device and profile data, and to apply configuration changes.
-- **Change Tracking:**
-  - Maintains a log of changes made to device settings for auditing and troubleshooting.
-- **Weather-Aware Automation:**
-  - Integrates with weather forecast data to make intelligent decisions about heating schedules and recipes.
+- **Fully-Configurable Schedule:**
+  - User-configurable schedule ensures it runs exactly when you need it to.
+- **Direct NeoHub Connection:**
+  - Connects directly to NeoHub devices without needing to expose them to the internet.
+- **Email Reports:**
+  - Can be configured to send an email after each run giving a summary of heating changes made.
 
 ## Cross-Platform Service
 
@@ -22,17 +20,38 @@ NeoConnect is implemented as a .NET Worker Service using the `BackgroundService`
 
 ## Configuration
 
-Configuration is managed via appsettings.json or environment variables. Key settings include:
+Settings are managed via appsettings.json or environment variables. Key settings include:
+- Schedule
 - NeoHub connection details
 - Heating variables and threshold values
 - Weather API integration
 - SMTP configuration
 
-## Usage
+## Scheduling
 
-- While running, the service will automatically connect to the specified NeoHub, retrieve schedules and weather data, and adjust heating settings on the connected NeoStat devices as appropriate.
-- The default schedule is set to run once every day at 2:00 AM. This can be overriden via appsettings or environment variables.
-- All actions and changes are logged for review.
+While running in the background, the service will trigger according to the schedule defined in the 'Schedule' app setting / environment variable.
+
+The schedule is defined using a Cron Expression - a mask which defines fixed times, dates and intervals. The mask consists of minute, hour, day-of-month, month and day-of-week fields:
+
+                                           Allowed values    Allowed special characters   Comment
+                    
+    ┌───────────── minute                0-59              * , - /                      
+    │ ┌───────────── hour                0-23              * , - /                      
+    │ │ ┌───────────── day of month      1-31              * , - / L W ?                
+    │ │ │ ┌───────────── month           1-12 or JAN-DEC   * , - /                      
+    │ │ │ │ ┌───────────── day of week   0-6  or SUN-SAT   * , - / # L ?                Both 0 and 7 means SUN
+    │ │ │ │ │
+    * * * * *
+
+| Expression           | Description                                                                           |
+|----------------------|---------------------------------------------------------------------------------------|
+| `* * * * *`          | Every minute                                                                          |
+| `0  0 1 * *`         | At midnight, on day 1 of every month                                                  |
+| `*/5 * * * *`        | Every 5 minutes                                                                       |
+| `30,45-15/2 1 * * *` | Every 2 minute from 1:00 AM to 01:15 AM and from 1:45 AM to 1:59 AM and at 1:30 AM    |
+| `0 0 * * MON-FRI`    | At 00:00, Monday through Friday                                                       |
+
+Note, if you do not require the service to run to a schedule (e.g. if the service is being managed by an external scheduler, or if you just want to test it), you can simply omit the Schedule and it will trigger immediately.
 
 ## Requirements
 
