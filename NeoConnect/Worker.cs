@@ -23,24 +23,27 @@ namespace NeoConnect
             Console.WriteLine("");
 
             var schedule = _config["Schedule"];
-            CronExpression? _cron = null;                        
-            if (schedule == null || !CronExpression.TryParse(schedule, CronFormat.Standard, out _cron))
+            CronExpression? _cron = null;
+
+            // If a schedule is defined then run to that schedule, otherwise run once
+            if (schedule != null && CronExpression.TryParse(schedule, CronFormat.Standard, out _cron))
             {
-                // No schedule is configured, run immediately.
-                await _actionsService.PerformActions(stoppingToken);
-                return;
+                while (!stoppingToken.IsCancellationRequested)
+                {
+                    var utcNow = DateTime.UtcNow;
+                    var nextRunUtc = _cron.GetNextOccurrence(utcNow) ?? utcNow;
+
+                    Console.WriteLine("Next run scheduled for " + nextRunUtc.ToString("G"));
+                    await Task.Delay(nextRunUtc - utcNow, stoppingToken);
+
+                    await _actionsService.PerformActions(stoppingToken);
+
+                    Console.WriteLine("");
+                }
             }
-
-            while (!stoppingToken.IsCancellationRequested)
+            else
             {
-                var utcNow = DateTime.UtcNow;
-                var nextRunUtc = _cron.GetNextOccurrence(utcNow) ?? utcNow;
-                
-                Console.WriteLine("Next run scheduled for " + nextRunUtc.ToString("G"));
-
-                await Task.Delay(nextRunUtc - utcNow, stoppingToken);                
-                
-                Console.WriteLine("");
+                await _actionsService.PerformActions(stoppingToken);
             }
         }
     }

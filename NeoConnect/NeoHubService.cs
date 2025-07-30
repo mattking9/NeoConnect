@@ -11,7 +11,7 @@ namespace NeoConnect
         private readonly Uri _uri;
         private readonly string _key;
 
-        private ClientWebSocket _ws = null;
+        private ClientWebSocket _ws;
 
         public NeoHubService()
         {                
@@ -41,7 +41,7 @@ namespace NeoConnect
 
                 return;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 _logger.LogError($"Error connecting to NeoHub at {_uri}. Connection State was {_ws.State}");
                 throw;
@@ -106,9 +106,9 @@ namespace NeoConnect
         {
             _logger.LogInformation($"Running recipe: {recipeName}.");
 
-            //await SendMessage("GET_PROFILES", "0", 1, cancellationToken);
+            await SendMessage("RUN_RECIPE", $"['{recipeName}']", 4, cancellationToken);
 
-            //var result = await ReceiveMessage(cancellationToken);
+            await ReceiveMessage(cancellationToken);
 
         }
 
@@ -116,10 +116,9 @@ namespace NeoConnect
         {
             _logger.LogInformation($"Setting preheat duration for {zoneName} to {maxPreheatDuration} hours.");
 
+            await SendMessage("SET_PREHEAT", $"[{maxPreheatDuration}, '{zoneName}']", 5, cancellationToken);
 
-            //await SendMessage("GET_PROFILES", "0", 1, cancellationToken);
-
-            //var result = await ReceiveMessage(cancellationToken);
+            await ReceiveMessage(cancellationToken);
 
         }
 
