@@ -30,8 +30,6 @@ namespace NeoConnect
 
         public async Task Cleanup(CancellationToken stoppingToken)
         {
-            changeList.Clear();
-
             await _neoHub.Disconnect(stoppingToken);
         }
 
@@ -41,9 +39,12 @@ namespace NeoConnect
             var maxTempDifference = _config.PreHeatOverride.MaxTempDifferenceForCancel;
             var defaultDuration = _config.PreHeatOverride.DefaultPreheatDuration ?? 2;
 
-            _logger.LogDebug($"ExternalTempThresholdForCancel: {threshold}c");
-            _logger.LogDebug($"MaxTempDifferenceForCancel: {maxTempDifference}c");
-            _logger.LogDebug($"DefaultPreheatDuration: {defaultDuration}h");
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug($"ExternalTempThresholdForCancel: {threshold}c");
+                _logger.LogDebug($"MaxTempDifferenceForCancel: {maxTempDifference}c");
+                _logger.LogDebug($"DefaultPreheatDuration: {defaultDuration}h");
+            }
 
             var devices = await _neoHub.GetDevices(stoppingToken);
             var profiles = await _neoHub.GetAllProfiles(stoppingToken);
@@ -53,7 +54,8 @@ namespace NeoConnect
 
             foreach (var device in devices.Where(d => d.IsThermostat && !d.IsOffline))
             {
-                var deviceProfile = profiles.SingleOrDefault(p => p.ProfileId == device.ActiveProfile);
+                Profile deviceProfile;
+                profiles.TryGetValue(device.ActiveProfile, out deviceProfile);
 
                 if (deviceProfile == null)
                 {
@@ -80,9 +82,12 @@ namespace NeoConnect
                 //get outside temperature at time of next interval from weather API
                 var forecastExternalTemp = forecastToday.Hour[nextInterval.Time.Hour].Temp;
 
-                _logger.LogDebug($"Forecast External Temperature at {nextInterval.Time}:00 is {forecastExternalTemp}c");
-                _logger.LogDebug($"Current Temperature of {device.ZoneName} is {device.ActualTemp}c.");
-                _logger.LogDebug($"Desired Temperature of {device.ZoneName} is {nextInterval.TargetTemp}c at {nextInterval.Time}.");
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug($"Forecast External Temperature at {nextInterval.Time}:00 is {forecastExternalTemp}c");
+                    _logger.LogDebug($"Current Temperature of {device.ZoneName} is {device.ActualTemp}c.");
+                    _logger.LogDebug($"Desired Temperature of {device.ZoneName} is {nextInterval.TargetTemp}c at {nextInterval.Time}.");
+                }
 
                 var internalTempDifference = nextInterval.TargetTemp - decimal.Parse(device.ActualTemp);
 
@@ -107,16 +112,15 @@ namespace NeoConnect
                     _logger.LogInformation($"Preheat duration already set to {maxPreheatDuration} hours for {device.ZoneName}.");
                 }
             }
-
-            devices.Clear();
-            profiles.Clear();
-            engineersData.Clear();
         }
         
         public async Task RunRecipeBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken)
         {
-            _logger.LogDebug($"ExternalTempThreshold: {_config.Recipes.ExternalTempThreshold}");
-            _logger.LogDebug($"Forecast External Average Temperature is {forecastToday.Day.AverageTemp}c");
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug($"ExternalTempThreshold: {_config.Recipes.ExternalTempThreshold}");
+                _logger.LogDebug($"Forecast External Average Temperature is {forecastToday.Day.AverageTemp}c");
+            }
 
             string recipeToRun = _config.Recipes.WinterRecipeName;
 

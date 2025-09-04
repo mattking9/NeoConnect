@@ -6,7 +6,7 @@ namespace NeoConnect
     {
         Task Connect(CancellationToken cancellationToken);
         Task Disconnect(CancellationToken cancellationToken);
-        Task<List<Profile>> GetAllProfiles(CancellationToken cancellationToken);
+        Task<Dictionary<int, Profile>> GetAllProfiles(CancellationToken cancellationToken);
         Task<List<NeoDevice>> GetDevices(CancellationToken cancellationToken);
         Task<Dictionary<string, EngineersData>> GetEngineersData(CancellationToken cancellationToken);
         ComfortLevel? GetNextSwitchingInterval(ProfileSchedule schedule, DateTime? relativeTo);

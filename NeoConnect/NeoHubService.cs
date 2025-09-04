@@ -90,7 +90,7 @@ namespace NeoConnect
             return JsonSerializer.Deserialize<Dictionary<string, EngineersData>>(result.ResponseJson) ?? throw new Exception($"Error parsing GET_ENGINEERS json: {result.ResponseJson}");
         }
 
-        public async Task<List<Profile>> GetAllProfiles(CancellationToken cancellationToken)
+        public async Task<Dictionary<int, Profile>> GetAllProfiles(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Fetching Profiles.");
 
@@ -99,7 +99,7 @@ namespace NeoConnect
             var result = await ReceiveMessage(cancellationToken);
 
             var profiles = JsonSerializer.Deserialize<Dictionary<string, Profile>>(result.ResponseJson) ?? throw new Exception($"Error parsing GET_PROFILES json: {result.ResponseJson}");
-            return profiles.Values.ToList();
+            return profiles.ToDictionary(kvp => kvp.Value.ProfileId, kvp => kvp.Value);
         }
 
         public async Task RunRecipe(string recipeName, CancellationToken cancellationToken)
@@ -173,7 +173,10 @@ namespace NeoConnect
                 throw new InvalidOperationException("WebSocket is not connected.");
             }
 
-            _logger.LogDebug("Sending Command:\r\n" + message);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Sending Command:\r\n" + message);
+            }
 
             var bytes = Encoding.UTF8.GetBytes(message);
             var segment = new ArraySegment<byte>(bytes);
@@ -208,7 +211,10 @@ namespace NeoConnect
                 readComplete = result.EndOfMessage;
             }
 
-            _logger.LogDebug("Received message:\r\n" + responseJson);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Received message:\r\n" + responseJson);
+            }
 
             return JsonSerializer.Deserialize<NeoHubResponse>(responseJson.ToString()) ?? throw new Exception($"Could not parse json: {responseJson}");
         }

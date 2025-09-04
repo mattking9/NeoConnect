@@ -4,7 +4,7 @@ NeoConnect is a cross-platform service designed to automate and optimize Heatmis
 
 ## Features
 
-- **Automated Heating Management:**
+- **Smart Heating Management:**
   - Adjusts preheat times for individual thermostats based on the weather forecast for the day ahead to avoid unnecessary heating when natural temperature increases are expected.
   - Runs user-defined recipes (e.g. switching between winter and summer profiles) based on the forecast external temperature.
 - **Fully-Configurable Schedule:**
@@ -16,7 +16,7 @@ NeoConnect is a cross-platform service designed to automate and optimize Heatmis
 
 ## Cross-Platform Service
 
-NeoConnect is implemented as a .NET Worker Service using the `BackgroundService` class, making it suitable for running as a background service on both Windows and Linux (systemd) environments. It targets .NET 8, ensuring compatibility across major platforms.
+NeoConnect is implemented as a .NET Worker Service, making it suitable for running as a background service on both Windows and Linux (systemd) environments. It targets .NET 8, ensuring compatibility across major platforms.
 
 ## Configuration
 
@@ -69,6 +69,7 @@ NeoConnect can be containerized and run in Docker for easy deployment and manage
 2. **Run the container:**
    ```sh
    docker run -d --name neoconnect neoconnect:latest \
+      -e Schedule=0 2 * * * \
       -e NeoHub__Uri=wss://local_hub_uri_and_port \
       -e NeoHub__ApiKey=local_hub_api_key \
       -e WeatherApi__ApiKey=your_weatherapi.com_api_key \

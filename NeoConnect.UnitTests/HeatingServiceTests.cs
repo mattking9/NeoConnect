@@ -98,12 +98,10 @@ namespace NeoConnect.UnitTests
                 }
             };
 
-            var profiles = new List<Profile>
+            var profiles = new Dictionary<int, Profile>
             {
-                new Profile
                 {
-                    ProfileId = 1,
-                    ProfileName = "Winter"
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
                 }
             };
 
@@ -136,12 +134,10 @@ namespace NeoConnect.UnitTests
                 }
             };
 
-            var profiles = new List<Profile>
+            var profiles = new Dictionary<int, Profile>
             {
-                new Profile
                 {
-                    ProfileId = 1,
-                    ProfileName = "Winter"
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
                 }
             };
 
@@ -174,14 +170,12 @@ namespace NeoConnect.UnitTests
                 }
             };
 
-            var profiles = new List<Profile>
+            var profiles = new Dictionary<int, Profile>
             {
-                new Profile
                 {
-                    ProfileId = 1,
-                    ProfileName = "X"
+                    1, new Profile { ProfileId = 1, ProfileName = "X" }
                 }
-            };            
+            };
 
             _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
             _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
@@ -211,13 +205,11 @@ namespace NeoConnect.UnitTests
                     ActiveProfile = 1
                 }
             };            
-            
-            var profiles = new List<Profile> 
+                        
+            var profiles = new Dictionary<int, Profile>
             {
-                new Profile
                 {
-                    ProfileId = 1,
-                    ProfileName = "Summer" // Same as _config.SummerProfileName
+                    1, new Profile { ProfileId = 1, ProfileName = "Summer" }  // Same as _config.SummerProfileName
                 }
             };
 
@@ -257,12 +249,10 @@ namespace NeoConnect.UnitTests
 
             ComfortLevel nextInterval = null;
 
-            var profiles = new List<Profile>
+            var profiles = new Dictionary<int, Profile>
             {
-                new Profile
                 {
-                    ProfileId = 1,
-                    ProfileName = "Winter",                    
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
                 }
             };
 
@@ -292,12 +282,10 @@ namespace NeoConnect.UnitTests
 
             var nextInterval = new ComfortLevel(new object[]{ "01:00:00", "21" });
 
-            var profiles = new List<Profile>
+            var profiles = new Dictionary<int, Profile>
             {
-                new Profile
                 {
-                    ProfileId = 1,
-                    ProfileName = "Winter",
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
                 }
             };
 
@@ -341,12 +329,10 @@ namespace NeoConnect.UnitTests
 
             var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
 
-            var profiles = new List<Profile>
+            var profiles = new Dictionary<int, Profile>
             {
-                new Profile
                 {
-                    ProfileId = 1,
-                    ProfileName = "Winter"
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
                 }
             };
 
@@ -390,12 +376,10 @@ namespace NeoConnect.UnitTests
 
             var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
 
-            var profiles = new List<Profile>
+            var profiles = new Dictionary<int, Profile>
             {
-                new Profile
                 {
-                    ProfileId = 1,
-                    ProfileName = "Winter"
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
                 }
             };
 
@@ -439,12 +423,10 @@ namespace NeoConnect.UnitTests
 
             var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
 
-            var profiles = new List<Profile>
+            var profiles = new Dictionary<int, Profile>
             {
-                new Profile
                 {
-                    ProfileId = 1,
-                    ProfileName = "Winter"
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
                 }
             };
 
@@ -488,12 +470,10 @@ namespace NeoConnect.UnitTests
 
             var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
 
-            var profiles = new List<Profile>
+            var profiles = new Dictionary<int, Profile>
             {
-                new Profile
                 {
-                    ProfileId = 1,
-                    ProfileName = "Winter"
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
                 }
             };
 
@@ -538,12 +518,10 @@ namespace NeoConnect.UnitTests
 
             var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
 
-            var profiles = new List<Profile>
+            var profiles = new Dictionary<int, Profile>
             {
-                new Profile
                 {
-                    ProfileId = 1,
-                    ProfileName = "Winter"
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
                 }
             };
 
