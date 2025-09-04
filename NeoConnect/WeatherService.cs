@@ -7,14 +7,16 @@ namespace NeoConnect
     {
         private readonly ILogger<WeatherService> _logger;
         private readonly IConfiguration _config;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly string _uri;
         private readonly string _apiKey;
         private readonly string _location;
 
-        public WeatherService(ILogger<WeatherService> logger, IConfiguration config)
+        public WeatherService(ILogger<WeatherService> logger, IConfiguration config, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
             _config = config;
+            _httpClientFactory = httpClientFactory;
 
             _uri = _config.GetValue<string>("WeatherApi:Uri") ?? throw new ArgumentNullException("Config value for WeatherApi:Uri is required");
             _apiKey = _config.GetValue<string>("WeatherApi:ApiKey") ?? throw new ArgumentNullException("Config value for WeatherApi:ApiKey is required");
@@ -22,28 +24,31 @@ namespace NeoConnect
         }
 
         public async Task<Forecast> GetForecast(CancellationToken stoppingToken)
-        {
+        {  
             _logger.LogInformation("Getting weather forecast.");
 
-            using (HttpClient client = new HttpClient())
+            using (var client = _httpClientFactory.CreateClient())
             {
                 // Add an Accept header for JSON format.
-                client.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue("application/json"));
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                // List data response.
-                HttpResponseMessage response = await client.GetAsync($"{_uri}?key={_apiKey}&q={_location}&days=1&aqi=no&alerts=no", stoppingToken);
+                // Call the API.
+                using (HttpResponseMessage response = await client.GetAsync($"{_uri}?key={_apiKey}&q={_location}&days=1&aqi=no&alerts=no", stoppingToken))
+                {
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        _logger.LogDebug($"weather response: [{response.StatusCode}] {await response.Content.ReadAsStringAsync()}");
+                    }
 
-                _logger.LogDebug($"weather response: [{response.StatusCode}] {await response.Content.ReadAsStringAsync()}");
+                    response.EnsureSuccessStatusCode();
 
-                response.EnsureSuccessStatusCode();
+                    // Parse the response content.
+                    var result = await response.Content.ReadFromJsonAsync<WeatherResponse>(stoppingToken) ?? throw new Exception($"Error parsing weather response json.");
 
-                // Parse the response content.
-                var result = await response.Content.ReadFromJsonAsync<WeatherResponse>(stoppingToken) ?? throw new Exception($"Error parsing weather response json.");
+                    _logger.LogInformation("Weather forecast successfully retrieved.");
 
-                _logger.LogInformation("Weather forecast successfully retrieved.");
-
-                return result.Forecast;
+                    return result.Forecast;
+                }
             }
         }
     }

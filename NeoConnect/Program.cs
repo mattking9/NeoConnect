@@ -10,24 +10,27 @@ namespace NeoConnect
         {
             var builder = Host.CreateApplicationBuilder(args);
 
+            builder.Services.AddSystemd();
+
             builder.Services.AddLogging(logging =>
                 logging.AddSimpleConsole(options =>
                 {
                     options.SingleLine = true;
                     options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
                 })
-            );            
+            );
+
+            builder.Services.AddHttpClient();
 
             builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
             builder.Services.Configure<HeatingConfig>(builder.Configuration.GetSection("HeatingConfig"));
 
-            builder.Services.AddSingleton<IWeatherService, WeatherService>();
-            builder.Services.AddSingleton<IHeatingService, HeatingService>();
-            builder.Services.AddSingleton<INeoHubService, NeoHubService>();            
-            builder.Services.AddSingleton<IEmailService, EmailService>();
-
-            builder.Services.AddSingleton<ActionsService>();
+            builder.Services.AddScoped<IWeatherService, WeatherService>();
+            builder.Services.AddScoped<IHeatingService, HeatingService>();
+            builder.Services.AddScoped<INeoHubService, NeoHubService>();            
+            builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<ActionsService>();
 
             builder.Services.AddHostedService<Worker>();
 

@@ -25,7 +25,7 @@ namespace NeoConnect
 
                 await _heatingService.Init(stoppingToken);
 
-                _logger.LogInformation("Running Action: SetRecipeBasedOnWeatherConditions.");
+                _logger.LogInformation("Running Action: RunRecipeBasedOnWeatherConditions.");
                 await _heatingService.RunRecipeBasedOnWeatherConditions(forecast.ForecastDay[0], stoppingToken);
 
                 _logger.LogInformation("Running Action: SetPreheatDurationBasedOnWeatherConditions.");

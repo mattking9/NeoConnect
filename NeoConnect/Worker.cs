@@ -1,16 +1,17 @@
 using Cronos;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace NeoConnect
 {
     public class Worker : BackgroundService
     {
-        private readonly ActionsService _actionsService;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly IConfiguration _config;
 
-        public Worker(IConfiguration config, ActionsService actionsService)
+        public Worker(IConfiguration config, IServiceScopeFactory serviceScopeFactory)
         {
             _config = config;
-            _actionsService = actionsService;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -33,17 +34,23 @@ namespace NeoConnect
                     var utcNow = DateTime.UtcNow;
                     var nextRunUtc = _cron.GetNextOccurrence(utcNow) ?? utcNow;
 
-                    Console.WriteLine("Next run scheduled for " + nextRunUtc.ToString("G"));
+                    Console.WriteLine("Next run scheduled for " + nextRunUtc.ToLocalTime().ToString("G"));
                     await Task.Delay(nextRunUtc - utcNow, stoppingToken);
 
-                    await _actionsService.PerformActions(stoppingToken);
+                    using var scope = _serviceScopeFactory.CreateScope();
+                    var actionsService = scope.ServiceProvider.GetRequiredService<ActionsService>();
+                    await actionsService.PerformActions(stoppingToken);
 
                     Console.WriteLine("");
                 }
             }
             else
             {
-                await _actionsService.PerformActions(stoppingToken);
+                using var scope = _serviceScopeFactory.CreateScope();
+                var actionsService = scope.ServiceProvider.GetRequiredService<ActionsService>();
+                await actionsService.PerformActions(stoppingToken);
+
+                Environment.Exit(0);
             }
         }
     }
