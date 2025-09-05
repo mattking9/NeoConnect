@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using NUnit.Framework;
 
 namespace NeoConnect.UnitTests
 {
@@ -20,7 +19,8 @@ namespace NeoConnect.UnitTests
         {
             _mockNeoHubService = new Mock<INeoHubService>();
             _mockLogger = new Mock<ILogger<HeatingService>>();
-            
+            _mockLogger.Setup(l => l.IsEnabled(It.IsAny<LogLevel>())).Returns(true);
+
             _config = new HeatingConfig
             {
                 SummerProfileName = "Summer",
