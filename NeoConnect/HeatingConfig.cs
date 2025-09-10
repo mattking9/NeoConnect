@@ -31,6 +31,7 @@
         public decimal? ExternalTempThreshold { get; set; }
         public string SummerRecipeName { get; set; }
         public string WinterRecipeName { get; set; }
+        public string LastRecipeRun { get; set; }
     }
 }
 

@@ -129,11 +129,11 @@ namespace NeoConnect
                 recipeToRun = _config.Recipes.SummerRecipeName;
             }
 
-            if (recipeToRun != lastRecipeRun)
+            if (recipeToRun != _config.Recipes.LastRecipeRun)
             {
                 await _neoHub.RunRecipe(recipeToRun, stoppingToken);
                 changeList.Add($"{recipeToRun} Recipe was run.");
-                lastRecipeRun = recipeToRun;
+                _config.Recipes.LastRecipeRun = recipeToRun;
             }
             else
             {
