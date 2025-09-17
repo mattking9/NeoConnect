@@ -141,7 +141,7 @@ namespace NeoConnect
         {
             return new ComfortLevel[] 
             { 
-                new ComfortLevel(scheduleGroup.Wake), 
+                new ComfortLevel(scheduleGroup.Wake, true),
                 new ComfortLevel(scheduleGroup.Leave),
                 new ComfortLevel(scheduleGroup.Return),
                 new ComfortLevel(scheduleGroup.Sleep)

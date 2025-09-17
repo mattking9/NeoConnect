@@ -35,15 +35,15 @@ namespace NeoConnect
 
         public async Task SetPreheatDurationBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken)
         {
-            var threshold = _config.PreHeatOverride.ExternalTempThresholdForCancel;
-            var maxTempDifference = _config.PreHeatOverride.MaxTempDifferenceForCancel;
-            var defaultDuration = _config.PreHeatOverride.DefaultPreheatDuration ?? 2;
+            if (!_config.PreHeatOverride.Enabled)
+            {
+                return;
+            }
 
             if (_logger.IsEnabled(LogLevel.Debug))
             {
-                _logger.LogDebug($"ExternalTempThresholdForCancel: {threshold}c");
-                _logger.LogDebug($"MaxTempDifferenceForCancel: {maxTempDifference}c");
-                _logger.LogDebug($"DefaultPreheatDuration: {defaultDuration}h");
+                _logger.LogDebug($"Default MaxPreheatHours: {_config.PreHeatOverride.MaxPreheatHours}c");
+                _logger.LogDebug($"Overrides: {_config.PreHeatOverride.Overrides.Select(o => $"[>{o.ExternalTempAbove}c = {o.MaxPreheatHours}h], ")}");
             }
 
             var devices = await _neoHub.GetDevices(stoppingToken);
@@ -69,8 +69,8 @@ namespace NeoConnect
                     continue;
                 }
 
-                //get the next switching interval that is at least 2 hours from now (or whatever the default duration is)
-                var nextInterval = _neoHub.GetNextSwitchingInterval(deviceProfile.Schedule, DateTime.Now.AddHours(defaultDuration));
+                //get the next switching interval that is at least 3 hours from now (or whatever the default duration is)
+                var nextInterval = _neoHub.GetNextSwitchingInterval(deviceProfile.Schedule, DateTime.Now.AddHours(_config.PreHeatOverride.MaxPreheatHours));
 
                 //if nextInterval is null then no more intervals today, therefore do nothing
                 if (nextInterval == null)
@@ -79,8 +79,11 @@ namespace NeoConnect
                     continue;
                 }
 
-                //get outside temperature at time of next interval from weather API
-                var forecastExternalTemp = forecastToday.Hour[nextInterval.Time.Hour].Temp;
+                //get outside temperature forecast for time of next interval from weather API.
+                //note, next interval time is not necessarily on the hour, so take average of two hours
+                var forecastExternalTemp1 = forecastToday.Hour[nextInterval.Time.Hour].Temp;
+                var forecastExternalTemp2 = forecastToday.Hour[nextInterval.Time.Hour < 23 ? nextInterval.Time.Hour + 1 : 23].Temp;
+                var forecastExternalTemp = Math.Round((forecastExternalTemp1.Value + forecastExternalTemp2.Value) / 2, 2);
 
                 if (_logger.IsEnabled(LogLevel.Debug))
                 {
@@ -88,19 +91,27 @@ namespace NeoConnect
                     _logger.LogDebug($"Current Temperature of {device.ZoneName} is {device.ActualTemp}c.");
                     _logger.LogDebug($"Desired Temperature of {device.ZoneName} is {nextInterval.TargetTemp}c at {nextInterval.Time}.");
                 }
-
-                var internalTempDifference = nextInterval.TargetTemp - decimal.Parse(device.ActualTemp);
-
-                // 'Normal' Preheat is 2 hours for all stats
-                var maxPreheatDuration = defaultDuration;
-
-                // If forecast temp is higher than the threshold and the actual temp now is within 2 degrees of target temp at the next switching
-                // interval then cancel preheat
-                if (forecastExternalTemp >= threshold && internalTempDifference < maxTempDifference)
+                                
+                var maxPreheatDuration = _config.PreHeatOverride.MaxPreheatHours;
+                
+                if (_config.PreHeatOverride.OnlyEnablePreheatForWakeSchedules && !nextInterval.IsWake)
                 {
+                    //if only applying preheat to wake schedules and this is not a wake schedule, set to 0
                     maxPreheatDuration = 0;
                 }
-
+                else if (_config.PreHeatOverride.Overrides.Count > 0)
+                {
+                    //check if any overrides apply for the forecast outside temperature
+                    foreach (var overrideItem in _config.PreHeatOverride.Overrides.OrderByDescending(o => o.ExternalTempAbove))
+                    {
+                        if (forecastExternalTemp >= overrideItem.ExternalTempAbove)
+                        {
+                            maxPreheatDuration = overrideItem.MaxPreheatHours;
+                            break;
+                        }
+                    }
+                }
+                
                 // Set the preheat duration unless it is already set to that value
                 if (maxPreheatDuration != engineersData[device.ZoneName].MaxPreheatDuration)
                 {
@@ -116,6 +127,11 @@ namespace NeoConnect
         
         public async Task RunRecipeBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken)
         {
+            if(!_config.Recipes.Enabled)
+            {                
+                return;
+            }
+
             if (_logger.IsEnabled(LogLevel.Debug))
             {
                 _logger.LogDebug($"ExternalTempThreshold: {_config.Recipes.ExternalTempThreshold}");
@@ -132,8 +148,12 @@ namespace NeoConnect
             if (recipeToRun != _config.Recipes.LastRecipeRun)
             {
                 await _neoHub.RunRecipe(recipeToRun, stoppingToken);
+
+                // wait five seconds to allow time for recipe to complete before continuing.
+                await Task.Delay(5000, stoppingToken);
+
                 changeList.Add($"{recipeToRun} Recipe was run.");
-                _config.Recipes.LastRecipeRun = recipeToRun;
+                _config.Recipes.LastRecipeRun = recipeToRun;                
             }
             else
             {
