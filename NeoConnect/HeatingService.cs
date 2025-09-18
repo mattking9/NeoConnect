@@ -43,7 +43,7 @@ namespace NeoConnect
             if (_logger.IsEnabled(LogLevel.Debug))
             {
                 _logger.LogDebug($"Default MaxPreheatHours: {_config.PreHeatOverride.MaxPreheatHours}c");
-                _logger.LogDebug($"Overrides: {_config.PreHeatOverride.Overrides.Select(o => $"[>{o.ExternalTempAbove}c = {o.MaxPreheatHours}h], ")}");
+                _logger.LogDebug($"Overrides: {string.Join(',', _config.PreHeatOverride.Overrides.Select(o => $"[>{o.ExternalTempAbove}c = {o.MaxPreheatHours}h]"))}");
             }
 
             var devices = await _neoHub.GetDevices(stoppingToken);
@@ -93,13 +93,15 @@ namespace NeoConnect
                 }
                                 
                 var maxPreheatDuration = _config.PreHeatOverride.MaxPreheatHours;
-                
+
+                var temperatureDifference = nextInterval.TargetTemp - Convert.ToDecimal(device.ActualTemp);
+
                 if (_config.PreHeatOverride.OnlyEnablePreheatForWakeSchedules && !nextInterval.IsWake)
                 {
                     //if only applying preheat to wake schedules and this is not a wake schedule, set to 0
                     maxPreheatDuration = 0;
                 }
-                else if (_config.PreHeatOverride.Overrides.Count > 0)
+                else if (temperatureDifference <= 2 && _config.PreHeatOverride.Overrides.Count > 0)
                 {
                     //check if any overrides apply for the forecast outside temperature
                     foreach (var overrideItem in _config.PreHeatOverride.Overrides.OrderByDescending(o => o.ExternalTempAbove))

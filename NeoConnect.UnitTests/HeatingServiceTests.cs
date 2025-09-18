@@ -565,7 +565,7 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
-                    ActualTemp = "18.5"
+                    ActualTemp = "19.5"
                 }
             };
 
@@ -584,6 +584,59 @@ namespace NeoConnect.UnitTests
 
             // Assert
             _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 1, It.IsAny<CancellationToken>()), Times.Once);
+
+            var changes = _heatingService.GetChangesMade();
+            Assert.That(changes.Count == 1);
+        }
+
+        [Test]
+        public async Task SetPreheatDurationBasedOnWeatherConditions_InternalTemperatureDifferenceGreaterThan2Degrees_DoesNotApplyOverride()
+        {
+            // Arrange
+            _config.PreHeatOverride.Overrides = new List<MaxPreHeatOverride>()
+            {
+                new MaxPreHeatOverride { ExternalTempAbove = 9.0m, MaxPreheatHours = 1 },
+                new MaxPreHeatOverride { ExternalTempAbove = 6.0m, MaxPreheatHours = 2 }
+            };
+
+            var forecastToday = CreateForecastHours(9.0m, 9.0m, 9.0m);
+
+            var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
+
+            var profiles = new Dictionary<int, Profile>
+            {
+                {
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                }
+            };
+
+            var devices = new List<NeoDevice>
+            {
+                new NeoDevice
+                {
+                    ZoneName = "Lounge",
+                    IsThermostat = true,
+                    IsOffline = false,
+                    ActiveProfile = 1,
+                    ActualTemp = "18.5"
+                }
+            };
+
+            var engineersData = new Dictionary<string, EngineersData>
+            {
+                { "Lounge", new EngineersData { MaxPreheatDuration = 0 } } // Preheat duration set to 0 hours
+            };
+
+            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+            _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
+            _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);
+            _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
+
+            // Act
+            await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+
+            // Assert
+            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 3, It.IsAny<CancellationToken>()), Times.Once);
 
             var changes = _heatingService.GetChangesMade();
             Assert.That(changes.Count == 1);
@@ -618,7 +671,7 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
-                    ActualTemp = "18.5"
+                    ActualTemp = "19.5"
                 }
             };
 
