@@ -28,11 +28,18 @@ namespace NeoConnect.UnitTests
                 PreHeatOverride = new PreHeatOverrideConfig
                 {
                     MaxPreheatHours = 4,                    
-                    Overrides = new List<MaxPreHeatOverride>()
+                    ExternalTempROCWeightings = new List<TemperatureWeighting>()
                     {
-                        new MaxPreHeatOverride { ExternalTempAbove = 9.5m, MaxPreheatHours = 1 },
-                        new MaxPreHeatOverride { ExternalTempAbove = 6.5m, MaxPreheatHours = 2 },
-                    }
+                        new TemperatureWeighting { Temp = 4, Weighting = 0.7m },
+                        new TemperatureWeighting { Temp = 6, Weighting = 0.5m },
+                        new TemperatureWeighting { Temp = 8, Weighting = 0.3m },
+                        new TemperatureWeighting { Temp = 10, Weighting = 0.1m },
+                        new TemperatureWeighting { Temp = 12, Weighting = 0 },
+                    },
+                    //SunnyAspectROCWeightings = new List<SunnyAspectWeighting>()
+                    //{
+                    //    new SunnyAspectWeighting { Devices = new string[]{ "Lounge" }, Weighting = 0.6m },                        
+                    //}
                 },
                 Recipes = new RecipeConfig
                 {
@@ -64,9 +71,17 @@ namespace NeoConnect.UnitTests
             };
             _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
 
+            var rocs = new Dictionary<string, decimal>
+            {
+                {
+                    "Lounge", 85
+                }
+            };
+            _mockNeoHubService.Setup(s => s.GetROC(It.IsAny<string[]>(), It.IsAny<CancellationToken>())).ReturnsAsync(rocs);
+
             var engineersData = new Dictionary<string, EngineersData>
             {
-                { "Lounge", new EngineersData { MaxPreheatDuration = 0 } } // Preheat duration set to 0 hours
+                { "Lounge", new EngineersData { MaxPreheatDuration = -1 } }
             };            
             _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);            
             
@@ -89,16 +104,18 @@ namespace NeoConnect.UnitTests
             //This table maps the effect of external temperature on the rate of change (ROC) in internal temperature when heating.
             var externalTemperatureWeightings = new Dictionary<decimal, decimal>()
             {
-                { 13, 0.9m },
-                { 12, 0.7m },
-                { 11, 0.5m },
-                { 10, 0.3m },
-                { 9, 0.2m },
-                { 8, 0.1m },
-                { 7, 0.08m },
-                { 6, 0.05m },
-                { 5, 0m },
-                { 4, 0m },                
+                { 14, 0m },
+                { 13, 0.0m },
+                { 12, 0.0m },
+                { 11, 0.1m },
+                { 10, 0.1m },
+                { 9, 0.3m },
+                { 8, 0.3m },
+                { 7, 0.5m },
+                { 6, 0.5m },
+                { 5, 0.7m },
+                { 4, 0.7m },
+                { 3, 1m },
             };
 
             foreach (var externalTempWeighting in externalTemperatureWeightings)
@@ -108,7 +125,7 @@ namespace NeoConnect.UnitTests
 
                 var forecastToday = CreateForecastHours(0, 0, 0, 0, 0, 0, 0, externalTemp, externalTemp);
 
-                var weightedRoc = 85 * (1 - weighting);
+                var weightedRoc = 85 * weighting;
 
                 foreach (var actualTemp in new[] { 19.5m, 18.5m, 17.5m, 16.5m })
                 {
@@ -128,7 +145,7 @@ namespace NeoConnect.UnitTests
                     {
                         _mockNeoHubService.Verify(s => s.SetPreheatDuration(
                             "Lounge", 
-                            It.Is<int>(p => p >= expectedPreheatDuration - 0.3m), 
+                            It.Is<int>(p => p >= expectedPreheatDuration - 0.3m && p <= expectedPreheatDuration + 1), 
                             It.IsAny<CancellationToken>()), Times.Once);
 
                         Console.WriteLine($"PASS: External Temp: {externalTemp}c, Internal Temp Dif: {20 - actualTemp}c");
@@ -155,7 +172,7 @@ namespace NeoConnect.UnitTests
         {
             return new ForecastDay
             {
-                Hour = hourlyTemps.Select(x => new ForecastHour { Temp = x }).ToList()
+                Hour = hourlyTemps.Select(x => new ForecastHour { Temp = x, IsDaytime = true, Condition = new ForecastCondition() { Code = "1000" } }).ToList()
             };                     
         }
     }

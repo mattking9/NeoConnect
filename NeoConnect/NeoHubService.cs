@@ -102,6 +102,14 @@ namespace NeoConnect
             return profiles.ToDictionary(kvp => kvp.Value.ProfileId, kvp => kvp.Value);
         }
 
+        public async Task<Dictionary<string, decimal>> GetROC(string[] devices, CancellationToken cancellationToken)
+        {
+            await SendMessage("VIEW_ROC", $"[{string.Join(',', devices.Select(d => $"'{d}'"))}]", 5, cancellationToken);
+
+            var result = await ReceiveMessage(cancellationToken);
+            return JsonSerializer.Deserialize<Dictionary<string, decimal>>(result.ResponseJson) ?? throw new Exception($"Error parsing VIEW_ROC json: {result.ResponseJson}");
+        }
+
         public async Task RunRecipe(string recipeName, CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Running recipe: {recipeName}.");

@@ -31,6 +31,9 @@ namespace NeoConnect
     {        
         public string? Time { get; set; }
 
+        [JsonPropertyName("Is_Day")]
+        public bool? IsDaytime { get; set; }
+
         [JsonPropertyName("Temp_C")]
         public decimal? Temp { get; set; }
         public ForecastCondition? Condition { get;set;}
@@ -40,6 +43,7 @@ namespace NeoConnect
     {
         public string? Text { get; set; }
         public string? Icon { get; set; }
+        public string? Code { get; set; }
     }
 }
 

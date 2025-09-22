@@ -16,21 +16,35 @@
         /// </summary>
         public int MaxPreheatHours { get; set; } = 5;
 
-        public List<MaxPreHeatOverride> Overrides { get; set; } = new List<MaxPreHeatOverride>();
+        public List<TemperatureWeighting> ExternalTempROCWeightings { get; set; } = new List<TemperatureWeighting>();
+
+        public List<SunnyAspectWeighting> SunnyAspectROCWeightings { get; set; } = new List<SunnyAspectWeighting>();
 
         public bool OnlyEnablePreheatForWakeSchedules { get; set; }
     }
 
-    public class MaxPreHeatOverride
+    public class TemperatureWeighting
     {
         /// <summary>
         /// When the external temperature forecast is above this level then the MaxPreheatDuration setting will be overridden
         /// </summary>
-        public decimal ExternalTempAbove { get; set; }
+        public decimal Temp { get; set; }
         /// <summary>
         /// The override for the maximum number of hours that preheat will run for
         /// </summary>
-        public int MaxPreheatHours { get; set; }
+        public decimal Weighting { get; set; }
+    }
+
+    public class SunnyAspectWeighting
+    {
+        /// <summary>
+        /// When the external temperature forecast is above this level then the MaxPreheatDuration setting will be overridden
+        /// </summary>
+        public string[] Devices { get; set; }
+        /// <summary>
+        /// The override for the maximum number of hours that preheat will run for
+        /// </summary>
+        public decimal Weighting { get; set; }
     }
 
     public class RecipeConfig
