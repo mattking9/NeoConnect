@@ -204,7 +204,7 @@ namespace NeoConnect.UnitTests
 
             // Assert
             _mockHeatingService.Verify(s => s.RunRecipeBasedOnWeatherConditions(forecast.ForecastDay[0], It.IsAny<CancellationToken>()), Times.Once);
-            _mockHeatingService.Verify(s => s.SetPreheatDurationBasedOnWeatherConditions(forecast.ForecastDay[0], It.IsAny<CancellationToken>()), Times.Once);
+            _mockHeatingService.Verify(s => s.SetMaxPreheatDurationBasedOnWeatherConditions(forecast.ForecastDay[0], It.IsAny<CancellationToken>()), Times.Once);
         }        
     }
 }

@@ -28,11 +28,11 @@
         /// <summary>
         /// When the external temperature forecast is above this level then the MaxPreheatDuration setting will be overridden
         /// </summary>
-        public decimal Temp { get; set; }
+        public double Temp { get; set; }
         /// <summary>
         /// The override for the maximum number of hours that preheat will run for
         /// </summary>
-        public decimal Weighting { get; set; }
+        public double Weighting { get; set; }
     }
 
     public class SunnyAspectWeighting
@@ -44,13 +44,13 @@
         /// <summary>
         /// The override for the maximum number of hours that preheat will run for
         /// </summary>
-        public decimal Weighting { get; set; }
+        public double Weighting { get; set; }
     }
 
     public class RecipeConfig
     {
         public bool Enabled { get; set; } = true;
-        public decimal? ExternalTempThreshold { get; set; }
+        public double? ExternalTempThreshold { get; set; }
         public string SummerRecipeName { get; set; }
         public string WinterRecipeName { get; set; }
         public string LastRecipeRun { get; set; }

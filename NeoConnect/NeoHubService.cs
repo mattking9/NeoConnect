@@ -102,12 +102,12 @@ namespace NeoConnect
             return profiles.ToDictionary(kvp => kvp.Value.ProfileId, kvp => kvp.Value);
         }
 
-        public async Task<Dictionary<string, decimal>> GetROC(string[] devices, CancellationToken cancellationToken)
+        public async Task<Dictionary<string, int>> GetROCData(string[] devices, CancellationToken cancellationToken)
         {
             await SendMessage("VIEW_ROC", $"[{string.Join(',', devices.Select(d => $"'{d}'"))}]", 5, cancellationToken);
 
             var result = await ReceiveMessage(cancellationToken);
-            return JsonSerializer.Deserialize<Dictionary<string, decimal>>(result.ResponseJson) ?? throw new Exception($"Error parsing VIEW_ROC json: {result.ResponseJson}");
+            return JsonSerializer.Deserialize<Dictionary<string, int>>(result.ResponseJson) ?? throw new Exception($"Error parsing VIEW_ROC json: {result.ResponseJson}");
         }
 
         public async Task RunRecipe(string recipeName, CancellationToken cancellationToken)
@@ -118,6 +118,8 @@ namespace NeoConnect
 
             await ReceiveMessage(cancellationToken);
 
+            // wait five seconds to allow time for recipe to complete before continuing.
+            await Task.Delay(5000, cancellationToken);
         }
 
         public async Task SetPreheatDuration(string zoneName, int maxPreheatDuration, CancellationToken cancellationToken)
@@ -149,7 +151,7 @@ namespace NeoConnect
         {
             return new ComfortLevel[] 
             { 
-                new ComfortLevel(scheduleGroup.Wake, true),
+                new ComfortLevel(scheduleGroup.Wake),
                 new ComfortLevel(scheduleGroup.Leave),
                 new ComfortLevel(scheduleGroup.Return),
                 new ComfortLevel(scheduleGroup.Sleep)
