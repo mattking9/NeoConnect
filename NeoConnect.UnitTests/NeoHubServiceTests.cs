@@ -61,7 +61,7 @@ namespace NeoConnect.UnitTests
         [TestCase("2025-07-27 17:30:00", "22:30", 20.6)]
         [TestCase("2025-07-27 22:29:59", "22:30", 20.6)]
 
-        public void GetNextSwitchingInterval_ReturnsCorrectResult(string isoDateTime, string expectedSwitchingTime, decimal expectedTemp)
+        public void GetNextSwitchingInterval_ReturnsCorrectResult(string isoDateTime, string expectedSwitchingTime, double expectedTemp)
         {
             // Arrange
             var service = new NeoHubService();

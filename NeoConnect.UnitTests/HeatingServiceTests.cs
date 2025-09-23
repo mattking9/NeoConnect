@@ -18,6 +18,14 @@ namespace NeoConnect.UnitTests
         public void Setup()
         {
             _mockNeoHubService = new Mock<INeoHubService>();
+
+            var rocMap = new Dictionary<string, int>
+            {                
+                { "Lounge", 60 }
+            };
+            _mockNeoHubService.Setup(n => n.GetROCData(It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(rocMap);
+
             _mockLogger = new Mock<ILogger<HeatingService>>();
             _mockLogger.Setup(l => l.IsEnabled(It.IsAny<LogLevel>())).Returns(true);
 
@@ -26,23 +34,24 @@ namespace NeoConnect.UnitTests
                 SummerProfileName = "Summer",
                 PreHeatOverride = new PreHeatOverrideConfig
                 {
-                    DefaultPreheatDuration = 2,
-                    ExternalTempThresholdForCancel = 18.0m,
-                    MaxTempDifferenceForCancel = 2.0m
+                    MaxPreheatHours = 3,
+                    OnlyEnablePreheatForWakeSchedules = false,
                 },
                 Recipes = new RecipeConfig
                 {
-                    ExternalTempThreshold = 15.0m,
+                    ExternalTempThreshold = 15.0,
                     SummerRecipeName = "Summer Recipe",
                     WinterRecipeName = "Winter Recipe"
                 }
             };
-            
+
+
+
             _mockOptions = new Mock<IOptions<HeatingConfig>>();
             _mockOptions.Setup(o => o.Value).Returns(_config);
-            
+
             _cts = new CancellationTokenSource();
-            
+
             _heatingService = new HeatingService(
                 _mockOptions.Object,
                 _mockLogger.Object,
@@ -53,14 +62,14 @@ namespace NeoConnect.UnitTests
         public void TearDown()
         {
             _cts.Dispose();
-        }        
+        }
 
         [Test]
         public async Task Init_CallsNeoHubConnect()
         {
             // Arrange
             _mockNeoHubService.Setup(s => s.Connect(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-            
+
             // Act
             await _heatingService.Init(_cts.Token);
 
@@ -73,7 +82,7 @@ namespace NeoConnect.UnitTests
         {
             // Arrange
             _mockNeoHubService.Setup(s => s.Disconnect(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-                
+
             // Act
             await _heatingService.Cleanup(_cts.Token);
 
@@ -82,10 +91,24 @@ namespace NeoConnect.UnitTests
         }
 
         [Test]
+        public async Task SetPreheatDurationBasedOnWeatherConditions_ActionNotEnabled_DoesNotRun()
+        {
+            // Arrange
+            _config.PreHeatOverride.Enabled = false;
+
+            // Act
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(null, _cts.Token);
+
+            // Assert
+            Assert.That(_heatingService.GetChangesMade().Count == 0);
+            _mockNeoHubService.Verify(s => s.SetPreheatDuration(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Test]
         public async Task SetPreheatDurationBasedOnWeatherConditions_DeviceIsNotThermostat_SkipsDevice()
         {
             // Arrange
-            var forecastToday = CreateForecastHours(20.0m);
+            var forecastToday = CreateForecastHours(false, false, 20.0);
 
             var devices = new List<NeoDevice>
             {
@@ -110,7 +133,7 @@ namespace NeoConnect.UnitTests
             _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(new Dictionary<string, EngineersData>());
 
             // Act
-            await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
 
             // Assert
             Assert.That(_heatingService.GetChangesMade().Count == 0);
@@ -121,7 +144,7 @@ namespace NeoConnect.UnitTests
         public async Task SetPreheatDurationBasedOnWeatherConditions_DeviceIsOffline_SkipsDevice()
         {
             // Arrange
-            var forecastToday = CreateForecastDay(20.0m);
+            var forecastToday = CreateForecastHours(false, false, 20.0);
 
             var devices = new List<NeoDevice>
             {
@@ -146,7 +169,7 @@ namespace NeoConnect.UnitTests
             _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(new Dictionary<string, EngineersData>());
 
             // Act
-            await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
 
             // Assert
             Assert.That(_heatingService.GetChangesMade().Count == 0);
@@ -157,7 +180,7 @@ namespace NeoConnect.UnitTests
         public async Task SetPreheatDurationBasedOnWeatherConditions_NoProfileForDevice_SkipsDevice()
         {
             // Arrange
-            var forecastToday = CreateForecastHours(20.0m);
+            var forecastToday = CreateForecastHours(false, false, 20.0);
 
             var devices = new List<NeoDevice>
             {
@@ -182,7 +205,7 @@ namespace NeoConnect.UnitTests
             _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(new Dictionary<string, EngineersData>());
 
             // Act
-            await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
 
             // Assert
             Assert.That(_heatingService.GetChangesMade().Count == 0);
@@ -193,8 +216,8 @@ namespace NeoConnect.UnitTests
         public async Task SetPreheatDurationBasedOnWeatherConditions_DeviceInSummerMode_SkipsDevice()
         {
             // Arrange
-            var forecastToday = CreateForecastHours(20.0m);
-            
+            var forecastToday = CreateForecastHours(false, false, 20.0);
+
             var devices = new List<NeoDevice>
             {
                 new NeoDevice
@@ -204,8 +227,8 @@ namespace NeoConnect.UnitTests
                     IsOffline = false,
                     ActiveProfile = 1
                 }
-            };            
-                        
+            };
+
             var profiles = new Dictionary<int, Profile>
             {
                 {
@@ -218,12 +241,12 @@ namespace NeoConnect.UnitTests
                 { "Lounge", new EngineersData { MaxPreheatDuration = 2 } }
             };
 
-            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);                
-            _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);                
+            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+            _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
             _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);
 
             // Act
-            await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
 
             // Assert
             Assert.That(_heatingService.GetChangesMade().Count == 0);
@@ -234,7 +257,7 @@ namespace NeoConnect.UnitTests
         public async Task SetPreheatDurationBasedOnWeatherConditions_NoNextInterval_SkipsDevice()
         {
             // Arrange
-            var forecastToday = CreateForecastHours(20.0m);
+            var forecastToday = CreateForecastHours(false, false, 20.0);
 
             var devices = new List<NeoDevice>
             {
@@ -267,7 +290,7 @@ namespace NeoConnect.UnitTests
             _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
 
             // Act
-            await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
 
             // Assert
             Assert.That(_heatingService.GetChangesMade().Count == 0);
@@ -275,12 +298,12 @@ namespace NeoConnect.UnitTests
         }
 
         [Test]
-        public async Task SetPreheatDurationBasedOnWeatherConditions_HighExternalTempAndRoomTempNearTarget_PreheatSet_CancelsPreheat()
+        public async Task SetPreheatDurationBasedOnWeatherConditions_PreheatAlreadySetToValue_DoesNotSetValue()
         {
             // Arrange
-            var forecastToday = CreateForecastHours(10.0m, 20.0m); // Hour 0 = 10.0, Hour 1 = 20.0 (above threshold)
+            var forecastToday = CreateForecastHours(false, false, 10.0, 10.5, 10.7);
 
-            var nextInterval = new ComfortLevel(new object[]{ "01:00:00", "21" });
+            var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
 
             var profiles = new Dictionary<int, Profile>
             {
@@ -297,13 +320,13 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
-                    ActualTemp = "19.5" // Close to target (21.0 - 19.5 = 1.5 which is < MaxTempDifferenceForCancel of 2.0)
+                    ActualTemp = "19" //at ROC of 60, preheat duration should be 2 hours
                 }
             };
 
             var engineersData = new Dictionary<string, EngineersData>
             {
-                { "Lounge", new EngineersData { MaxPreheatDuration = 2 } } // Preheat duration set to 2 hours
+                { "Lounge", new EngineersData { MaxPreheatDuration = 2 } } // Preheat duration already set to 2 hours
             };
 
             _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
@@ -312,20 +335,279 @@ namespace NeoConnect.UnitTests
             _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
 
             // Act
-            await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+
+            // Assert
+            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+
+            var changes = _heatingService.GetChangesMade();
+            Assert.That(changes.Count == 0);
+        }
+
+        [Test]
+        public async Task SetPreheatDurationBasedOnWeatherConditions_NoExternalTemperatureWeightings_PreheatNotAlreadySetToValue_SetsValue()
+        {
+            // Arrange
+            var forecastToday = CreateForecastHours(false, false, 10.0, 10.5, 10.7);
+
+            var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
+
+            var profiles = new Dictionary<int, Profile>
+            {
+                {
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                }
+            };
+
+            var devices = new List<NeoDevice>
+            {
+                new NeoDevice
+                {
+                    ZoneName = "Lounge",
+                    IsThermostat = true,
+                    IsOffline = false,
+                    ActiveProfile = 1,
+                    ActualTemp = "19" //at ROC of 60, preheat duration should be 2 hours
+                }
+            };
+
+            var engineersData = new Dictionary<string, EngineersData>
+            {
+                { "Lounge", new EngineersData { MaxPreheatDuration = 0 } } // Preheat duration currently set to 0 hours
+            };
+
+            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+            _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
+            _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);
+            _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
+
+            // Act
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+
+            // Assert
+            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 2, It.IsAny<CancellationToken>()), Times.Once);
+
+            var changes = _heatingService.GetChangesMade();
+            Assert.That(changes.Count == 1);
+        }
+
+        [Test]
+        public async Task SetPreheatDurationBasedOnWeatherConditions_PreheatIsBelowMaximumAllowed_DoesNotExceedMaximum()
+        {
+            // Arrange            
+            var forecastToday = CreateForecastHours(false, false, 1.0, 1.0, 1.0); // Below the lowest weighting of 6.0
+
+            var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
+
+            var profiles = new Dictionary<int, Profile>
+            {
+                {
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                }
+            };
+
+            var devices = new List<NeoDevice>
+            {
+                new NeoDevice
+                {
+                    ZoneName = "Lounge",
+                    IsThermostat = true,
+                    IsOffline = false,
+                    ActiveProfile = 1,
+                    ActualTemp = "15"  //at ROC of 60, preheat duration should be 6 hours
+                }
+            };
+
+            var engineersData = new Dictionary<string, EngineersData>
+            {
+                { "Lounge", new EngineersData { MaxPreheatDuration = -1 } }
+            };
+
+            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+            _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
+            _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);
+            _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
+
+            // Act
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+
+            // Assert
+            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 3, It.IsAny<CancellationToken>()), Times.Once);
+
+            var changes = _heatingService.GetChangesMade();
+            Assert.That(changes.Count == 1);
+        }
+
+        [Test]
+        public async Task SetPreheatDurationBasedOnWeatherConditions_TempIsBelowLowestWeighting_DoesNotApplyAnyWeighting()
+        {
+            // Arrange
+            _config.PreHeatOverride.ExternalTempROCWeightings = new List<TemperatureWeighting>()
+            {
+                new TemperatureWeighting { Temp = 6.0, Weighting = 0.67 },
+                new TemperatureWeighting { Temp = 9.0, Weighting = 0.33 }
+            };
+
+            var forecastToday = CreateForecastHours(false, false, 1.0, 1.0, 1.0); // Below the lowest weighting of 6.0
+
+            var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
+
+            var profiles = new Dictionary<int, Profile>
+            {
+                {
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                }
+            };
+
+            var devices = new List<NeoDevice>
+            {
+                new NeoDevice
+                {
+                    ZoneName = "Lounge",
+                    IsThermostat = true,
+                    IsOffline = false,
+                    ActiveProfile = 1,
+                    ActualTemp = "19"  //at ROC of 60, preheat duration should be 2 hours
+                }
+            };
+
+            var engineersData = new Dictionary<string, EngineersData>
+            {
+                { "Lounge", new EngineersData { MaxPreheatDuration = -1 } }
+            };
+
+            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+            _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
+            _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);
+            _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
+
+            // Act
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+
+            // Assert
+            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 2, It.IsAny<CancellationToken>()), Times.Once);
+
+            var changes = _heatingService.GetChangesMade();
+            Assert.That(changes.Count == 1);
+        }
+
+        [Test]
+        public async Task SetPreheatDurationBasedOnWeatherConditions_TempIsBetweenWeightings_AppliesCorrectWeighting()
+        {
+            // Arrange
+            _config.PreHeatOverride.ExternalTempROCWeightings = new List<TemperatureWeighting>()
+            {
+                new TemperatureWeighting { Temp = 6.0, Weighting = 0.67 },
+                new TemperatureWeighting { Temp = 9.0, Weighting = 0.33 }
+            };
+
+            var forecastToday = CreateForecastHours(false, false, 7.0, 7.0, 7.0); // Between the two weightings of 6.0 and 9.0
+
+            var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
+
+            var profiles = new Dictionary<int, Profile>
+            {
+                {
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                }
+            };
+
+            var devices = new List<NeoDevice>
+            {
+                new NeoDevice
+                {
+                    ZoneName = "Lounge",
+                    IsThermostat = true,
+                    IsOffline = false,
+                    ActiveProfile = 1,
+                    ActualTemp = "19.0" //at ROC of 60, preheat duration should be 2 hours
+                }
+            };
+
+            var engineersData = new Dictionary<string, EngineersData>
+            {
+                { "Lounge", new EngineersData { MaxPreheatDuration = 0 } } // Preheat duration set to 0 hours
+            };
+
+            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+            _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
+            _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);
+            _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
+
+            // Act
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+
+            // Assert
+            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 2, It.IsAny<CancellationToken>()), Times.Once);
+
+            var changes = _heatingService.GetChangesMade();
+            Assert.That(changes.Count == 1);
+        }
+
+        [Test]
+        public async Task SetPreheatDurationBasedOnWeatherConditions_TempIsEqualToHighestWeighting_AppliesHighestWeighting()
+        {
+            // Arrange
+            _config.PreHeatOverride.ExternalTempROCWeightings = new List<TemperatureWeighting>()
+            {
+                new TemperatureWeighting { Temp = 6.0, Weighting = 0.67 },
+                new TemperatureWeighting { Temp = 9.0, Weighting = 0 }, //weighting of zero will make preheat be zero hours
+            };
+
+            var forecastToday = CreateForecastHours(false, false, 9.0, 9.0, 9.0);
+
+            var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
+
+            var profiles = new Dictionary<int, Profile>
+            {
+                {
+                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                }
+            };
+
+            var devices = new List<NeoDevice>
+            {
+                new NeoDevice
+                {
+                    ZoneName = "Lounge",
+                    IsThermostat = true,
+                    IsOffline = false,
+                    ActiveProfile = 1,
+                    ActualTemp = "19.0" //at ROC of 60, unweighted preheat duration would be 2 hours
+                }
+            };
+
+            var engineersData = new Dictionary<string, EngineersData>
+            {
+                { "Lounge", new EngineersData { MaxPreheatDuration = -1 } }
+            };
+
+            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+            _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
+            _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);
+            _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
+
+            // Act
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
 
             // Assert
             _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 0, It.IsAny<CancellationToken>()), Times.Once);
-            
+
             var changes = _heatingService.GetChangesMade();
-            Assert.That(changes, Contains.Item("Lounge preheat duration was changed to 0 hours."));
-        }
+            Assert.That(changes.Count == 1);
+        }        
 
         [Test]
-        public async Task SetPreheatDurationBasedOnWeatherConditions_HighExternalTempAndRoomTempNearTarget_PreheatAlreadyCancelled_DoesNotCancelPreheat()
+        public async Task SetPreheatDurationBasedOnWeatherConditions_TempIsAboveHighestWeighting_AppliesHighestWeighting()
         {
             // Arrange
-            var forecastToday = CreateForecastHours(10.0m, 20.0m); // Hour 0 = 10.0, Hour 1 = 20.0 (above threshold)
+            _config.PreHeatOverride.ExternalTempROCWeightings = new List<TemperatureWeighting>()
+            {
+                new TemperatureWeighting { Temp = 6.0, Weighting = 0.67 },
+                new TemperatureWeighting { Temp = 9.0, Weighting = 0 }, //weighting of zero will make preheat be zero hours
+            };
+
+            var forecastToday = CreateForecastHours(false, false, 15.0, 15.0, 15.0);
 
             var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
 
@@ -344,13 +626,13 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
-                    ActualTemp = "19.5" // Close to target (21.0 - 19.5 = 1.5 which is < MaxTempDifferenceForCancel of 2.0)
+                    ActualTemp = "19.0" //at ROC of 60, unweighted preheat duration would be 2 hours
                 }
             };
 
             var engineersData = new Dictionary<string, EngineersData>
             {
-                { "Lounge", new EngineersData { MaxPreheatDuration = 0 } } // Preheat duration set to 0 hours
+                { "Lounge", new EngineersData { MaxPreheatDuration = -1 } }
             };
 
             _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
@@ -359,67 +641,25 @@ namespace NeoConnect.UnitTests
             _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
 
             // Act
-            await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
 
             // Assert
-            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 0, It.IsAny<CancellationToken>()), Times.Never);
-
-            var changes = _heatingService.GetChangesMade();
-            Assert.That(changes.Count == 0);
-        }
-
-        [Test]
-        public async Task SetPreheatDurationBasedOnWeatherConditions_LowExternalTemp_PreheatCancelled_SetsPreheat()
-        {
-            // Arrange
-            var forecastToday = CreateForecastHours(10.0m, 10.0m); // Hour 0 = 10.0, Hour 1 = 10.0 (below threshold)
-
-            var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
-
-            var profiles = new Dictionary<int, Profile>
-            {
-                {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
-                }
-            };
-
-            var devices = new List<NeoDevice>
-            {
-                new NeoDevice
-                {
-                    ZoneName = "Lounge",
-                    IsThermostat = true,
-                    IsOffline = false,
-                    ActiveProfile = 1,
-                    ActualTemp = "19.5" // Close to target (21.0 - 19.5 = 1.5 which is < MaxTempDifferenceForCancel of 2.0)
-                }
-            };
-
-            var engineersData = new Dictionary<string, EngineersData>
-            {
-                { "Lounge", new EngineersData { MaxPreheatDuration = 0 } } // Preheat duration set to 0 hours
-            };
-
-            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
-            _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
-            _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);
-            _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
-
-            // Act
-            await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
-
-            // Assert
-            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 2, It.IsAny<CancellationToken>()), Times.Once);
+            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 0, It.IsAny<CancellationToken>()), Times.Once);
 
             var changes = _heatingService.GetChangesMade();
             Assert.That(changes.Count == 1);
         }
 
         [Test]
-        public async Task SetPreheatDurationBasedOnWeatherConditions_LowExternalTemp_PreheatAlreadySet_DoesNotSetPreheat()
+        public async Task SetPreheatDurationBasedOnWeatherConditions_SunnyAspectWeightingExists_AppliesWeighting()
         {
             // Arrange
-            var forecastToday = CreateForecastHours(10.0m, 10.0m); // Hour 0 = 10.0, Hour 1 = 10.0 (below threshold)
+            _config.PreHeatOverride.SunnyAspectROCWeightings = new List<SunnyAspectWeighting>()
+            {                
+                new SunnyAspectWeighting { Devices = new string[] { "Lounge" }, Weighting = 0.5 }, //weighting of 0.5 will half preheat duration
+            };
+
+            var forecastToday = CreateForecastHours(true, true, 15.0, 15.0, 15.0);
 
             var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
 
@@ -438,13 +678,13 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
-                    ActualTemp = "19.5" // Close to target (21.0 - 19.5 = 1.5 which is < MaxTempDifferenceForCancel of 2.0)
+                    ActualTemp = "19.0" //at ROC of 60, unweighted preheat duration would be 2 hours
                 }
             };
 
             var engineersData = new Dictionary<string, EngineersData>
             {
-                { "Lounge", new EngineersData { MaxPreheatDuration = 2 } } // Preheat duration set to 2 hours
+                { "Lounge", new EngineersData { MaxPreheatDuration = -1 } }
             };
 
             _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
@@ -453,105 +693,26 @@ namespace NeoConnect.UnitTests
             _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
 
             // Act
-            await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
 
             // Assert
-            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 0, It.IsAny<CancellationToken>()), Times.Never);
-
-            var changes = _heatingService.GetChangesMade();
-            Assert.That(changes.Count == 0);
-        }
-
-        [Test]
-        public async Task SetPreheatDurationBasedOnWeatherConditions_TempNotNearTarget_PreheatCancelled_SetsPreheat()
-        {
-            // Arrange
-            var forecastToday = CreateForecastHours(10.0m, 20.0m); // Hour 0 = 10.0, Hour 1 = 20.0 (above threshold)
-
-            var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
-
-            var profiles = new Dictionary<int, Profile>
-            {
-                {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
-                }
-            };
-
-            var devices = new List<NeoDevice>
-            {
-                new NeoDevice
-                {
-                    ZoneName = "Lounge",
-                    IsThermostat = true,
-                    IsOffline = false,
-                    ActiveProfile = 1,
-                    ActualTemp = "18.5" // Not close to target (21.0 - 18.5 = 2.5 which is > MaxTempDifferenceForCancel of 2.0)
-                }
-            };
-
-            var engineersData = new Dictionary<string, EngineersData>
-            {
-                { "Lounge", new EngineersData { MaxPreheatDuration = 0 } } // Preheat duration set to 0 hours
-            };
-
-            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
-            _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
-            _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);
-            _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
-
-            // Act
-            await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
-
-            // Assert
-            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 2, It.IsAny<CancellationToken>()), Times.Once);
+            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 1, It.IsAny<CancellationToken>()), Times.Once);
 
             var changes = _heatingService.GetChangesMade();
             Assert.That(changes.Count == 1);
         }
 
         [Test]
-        public async Task SetPreheatDurationBasedOnWeatherConditions_TempNotNearTarget_PreheatAlreadySet_DoesNotSetPreheat()
+        public async Task RunRecipeBasedOnWeatherConditions_ActionNotEnabled_DoesNotRun()
         {
             // Arrange
-            var forecastToday = CreateForecastHours(10.0m, 20.0m); // Hour 0 = 10.0, Hour 1 = 20.0 (above threshold)
-
-
-            var nextInterval = new ComfortLevel(new object[] { "01:00:00", "21" });
-
-            var profiles = new Dictionary<int, Profile>
-            {
-                {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
-                }
-            };
-
-            var devices = new List<NeoDevice>
-            {
-                new NeoDevice
-                {
-                    ZoneName = "Lounge",
-                    IsThermostat = true,
-                    IsOffline = false,
-                    ActiveProfile = 1,
-                    ActualTemp = "18.5" // Not close to target (21.0 - 18.5 = 2.5 which is > MaxTempDifferenceForCancel of 2.0)
-                }
-            };
-
-            var engineersData = new Dictionary<string, EngineersData>
-            {
-                { "Lounge", new EngineersData { MaxPreheatDuration = 2 } } // Preheat duration set to 2 hours
-            };
-
-            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
-            _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
-            _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);
-            _mockNeoHubService.Setup(s => s.GetNextSwitchingInterval(It.IsAny<ProfileSchedule>(), It.IsAny<DateTime?>())).Returns(nextInterval);
+            _config.Recipes.Enabled = false;
 
             // Act
-            await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+            await _heatingService.RunRecipeBasedOnWeatherConditions(null, _cts.Token);
 
             // Assert
-            _mockNeoHubService.Verify(s => s.SetPreheatDuration("Lounge", 0, It.IsAny<CancellationToken>()), Times.Never);
+            _mockNeoHubService.Verify(s => s.RunRecipe(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
 
             var changes = _heatingService.GetChangesMade();
             Assert.That(changes.Count == 0);
@@ -561,14 +722,14 @@ namespace NeoConnect.UnitTests
         public async Task RunRecipeBasedOnWeatherConditions_WhenWarm_RunsSummerRecipe()
         {
             // Arrange
-            var forecastToday = CreateForecastDay(20.0m); // Above threshold                        
+            var forecastToday = CreateForecastDay(20.0); // Above threshold                        
 
             // Act
             await _heatingService.RunRecipeBasedOnWeatherConditions(forecastToday, _cts.Token);
 
             // Assert
             _mockNeoHubService.Verify(s => s.RunRecipe("Summer Recipe", It.IsAny<CancellationToken>()), Times.Once);
-            
+
             var changes = _heatingService.GetChangesMade();
             Assert.That(changes, Contains.Item("Summer Recipe Recipe was run."));
         }
@@ -577,14 +738,14 @@ namespace NeoConnect.UnitTests
         public async Task RunRecipeBasedOnWeatherConditions_WhenCold_RunsWinterRecipe()
         {
             // Arrange
-            var forecastToday = CreateForecastDay(10.0m); // Below threshold                        
+            var forecastToday = CreateForecastDay(10.0); // Below threshold                        
 
             // Act
             await _heatingService.RunRecipeBasedOnWeatherConditions(forecastToday, _cts.Token);
 
             // Assert
             _mockNeoHubService.Verify(s => s.RunRecipe("Winter Recipe", It.IsAny<CancellationToken>()), Times.Once);
-            
+
             var changes = _heatingService.GetChangesMade();
             Assert.That(changes, Contains.Item("Winter Recipe Recipe was run."));
         }
@@ -593,7 +754,7 @@ namespace NeoConnect.UnitTests
         public async Task RunRecipeBasedOnWeatherConditions_WhenSameRecipeAlreadyRun_DoesNotRunAgain()
         {
             // Arrange
-            var forecastToday = CreateForecastDay(10.0m); // Below threshold
+            var forecastToday = CreateForecastDay(10); // Below threshold
 
             // Act
             await _heatingService.RunRecipeBasedOnWeatherConditions(forecastToday, _cts.Token); // First run, should run Winter Recipe
@@ -605,22 +766,32 @@ namespace NeoConnect.UnitTests
             var changes = _heatingService.GetChangesMade();
             Assert.That(changes.Count == 1);
         }
-        
+
         // Helper methods for creating test data
-        private ForecastDay CreateForecastDay(decimal averageTemp)
+        private ForecastDay CreateForecastDay(double averageTemp)
         {
             return new ForecastDay
             {
                 Day = new ForecastDayDaily { AverageTemp = averageTemp },
             };
         }
-        
-        private ForecastDay CreateForecastHours(params decimal[] hourlyTemps)
+
+        private ForecastDay CreateForecastHours(bool isDaytime, bool isSunny, params double[] hourlyTemps)
         {
             return new ForecastDay
             {
-                Hour = hourlyTemps.Select(x => new ForecastHour { Temp = x }).ToList()
-            };                     
+                Hour = hourlyTemps.Select(x => new ForecastHour 
+                { 
+                    Temp = x, 
+                    IsDaytime = isDaytime ? 1 : 0, 
+                    Condition = new ForecastCondition() 
+                    {
+                        Code = isSunny ? 1000 : 1001,
+                        Text = isSunny ? "Sunny" : "Partly Cloudy",
+                        Icon = isSunny ? "//cdn.weatherapi.com/weather/64x64/day/113.png" : "//cdn.weatherapi.com/weather/64x64/day/116.png"
+                    }
+                }).ToList()
+            };
         }
     }
 }

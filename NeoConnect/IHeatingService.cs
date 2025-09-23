@@ -7,6 +7,6 @@ namespace NeoConnect
         Task Cleanup(CancellationToken stoppingToken);
         Task Init(CancellationToken stoppingToken);
         Task RunRecipeBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken);
-        Task SetPreheatDurationBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken);
+        Task SetMaxPreheatDurationBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken);
     }
 }

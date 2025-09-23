@@ -10,25 +10,47 @@
 
     public class PreHeatOverrideConfig
     {
+        public bool Enabled { get; set; } = true;
         /// <summary>
-        /// The maximum number of hours that preheat will run for if it is not cancelled.
+        /// The maximum number of hours that preheat will run for if no overrides are applicable.
         /// </summary>
-        public int? DefaultPreheatDuration { get; set; }
+        public int MaxPreheatHours { get; set; } = 5;
 
-        /// <summary>
-        /// If the external temperature is lower than this number then preheat will not be cancelled.
-        /// </summary>
-        public decimal? ExternalTempThresholdForCancel { get; set; }
+        public List<TemperatureWeighting> ExternalTempROCWeightings { get; set; } = new List<TemperatureWeighting>();
 
+        public List<SunnyAspectWeighting> SunnyAspectROCWeightings { get; set; } = new List<SunnyAspectWeighting>();
+
+        public bool OnlyEnablePreheatForWakeSchedules { get; set; }
+    }
+
+    public class TemperatureWeighting
+    {
         /// <summary>
-        /// If the current temperature of the room is this number of degrees below the target temperature then the preheat will not be cancelled.
+        /// When the external temperature forecast is above this level then the MaxPreheatDuration setting will be overridden
         /// </summary>
-        public decimal? MaxTempDifferenceForCancel { get; set; }
+        public double Temp { get; set; }
+        /// <summary>
+        /// The override for the maximum number of hours that preheat will run for
+        /// </summary>
+        public double Weighting { get; set; }
+    }
+
+    public class SunnyAspectWeighting
+    {
+        /// <summary>
+        /// When the external temperature forecast is above this level then the MaxPreheatDuration setting will be overridden
+        /// </summary>
+        public string[] Devices { get; set; }
+        /// <summary>
+        /// The override for the maximum number of hours that preheat will run for
+        /// </summary>
+        public double Weighting { get; set; }
     }
 
     public class RecipeConfig
     {
-        public decimal? ExternalTempThreshold { get; set; }
+        public bool Enabled { get; set; } = true;
+        public double? ExternalTempThreshold { get; set; }
         public string SummerRecipeName { get; set; }
         public string WinterRecipeName { get; set; }
         public string LastRecipeRun { get; set; }

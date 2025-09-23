@@ -33,26 +33,27 @@ namespace NeoConnect
             await _neoHub.Disconnect(stoppingToken);
         }
 
-        public async Task SetPreheatDurationBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken)
+        public async Task SetMaxPreheatDurationBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken)
         {
-            var threshold = _config.PreHeatOverride.ExternalTempThresholdForCancel;
-            var maxTempDifference = _config.PreHeatOverride.MaxTempDifferenceForCancel;
-            var defaultDuration = _config.PreHeatOverride.DefaultPreheatDuration ?? 2;
+            if (!_config.PreHeatOverride.Enabled)
+            {
+                return;
+            }
 
             if (_logger.IsEnabled(LogLevel.Debug))
             {
-                _logger.LogDebug($"ExternalTempThresholdForCancel: {threshold}c");
-                _logger.LogDebug($"MaxTempDifferenceForCancel: {maxTempDifference}c");
-                _logger.LogDebug($"DefaultPreheatDuration: {defaultDuration}h");
+                _logger.LogDebug($"Default MaxPreheatHours: {_config.PreHeatOverride.MaxPreheatHours}c");                
             }
 
-            var devices = await _neoHub.GetDevices(stoppingToken);
-            var profiles = await _neoHub.GetAllProfiles(stoppingToken);
+            //fetch all the necessary data from the NeoHub
+            var devices = (await _neoHub.GetDevices(stoppingToken)).Where(d => d.IsThermostat && !d.IsOffline);
+            var profiles = await _neoHub.GetAllProfiles(stoppingToken);            
             var engineersData = await _neoHub.GetEngineersData(stoppingToken);
+            var rocData = await _neoHub.GetROCData(devices.Select(d => d.ZoneName).ToArray(), stoppingToken);
 
-            _logger.LogInformation($"Found {devices.Count} Devices and {profiles.Count} Profiles.");
+            _logger.LogInformation($"Found {devices.Count()} Devices and {profiles.Count} Profiles.");
 
-            foreach (var device in devices.Where(d => d.IsThermostat && !d.IsOffline))
+            foreach (var device in devices)
             {
                 Profile deviceProfile;
                 profiles.TryGetValue(device.ActiveProfile, out deviceProfile);
@@ -69,39 +70,24 @@ namespace NeoConnect
                     continue;
                 }
 
-                //get the next switching interval that is at least 2 hours from now (or whatever the default duration is)
-                var nextInterval = _neoHub.GetNextSwitchingInterval(deviceProfile.Schedule, DateTime.Now.AddHours(defaultDuration));
+                // Get the next switching interval that is at least 3 hours from now (or whatever the default duration is)
+                var nextInterval = _neoHub.GetNextSwitchingInterval(deviceProfile.Schedule, DateTime.Now.AddHours(_config.PreHeatOverride.MaxPreheatHours));
 
-                //if nextInterval is null then no more intervals today, therefore do nothing
+                // If nextInterval is null then no more intervals today, therefore do nothing
                 if (nextInterval == null)
                 {
                     _logger.LogInformation($"No more intervals today for {device.ZoneName}. Doing nothing.");
                     continue;
                 }
 
-                //get outside temperature at time of next interval from weather API
-                var forecastExternalTemp = forecastToday.Hour[nextInterval.Time.Hour].Temp;
+                // Get the rate of change for this device
+                int roc = 0;
+                rocData.TryGetValue(device.ZoneName, out roc);
 
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    _logger.LogDebug($"Forecast External Temperature at {nextInterval.Time}:00 is {forecastExternalTemp}c");
-                    _logger.LogDebug($"Current Temperature of {device.ZoneName} is {device.ActualTemp}c.");
-                    _logger.LogDebug($"Desired Temperature of {device.ZoneName} is {nextInterval.TargetTemp}c at {nextInterval.Time}.");
-                }
+                // Calculate the max preheat duration required
+                int maxPreheatDuration = CalculateMaxPreheatDuration(forecastToday, roc, device, nextInterval);                
 
-                var internalTempDifference = nextInterval.TargetTemp - decimal.Parse(device.ActualTemp);
-
-                // 'Normal' Preheat is 2 hours for all stats
-                var maxPreheatDuration = defaultDuration;
-
-                // If forecast temp is higher than the threshold and the actual temp now is within 2 degrees of target temp at the next switching
-                // interval then cancel preheat
-                if (forecastExternalTemp >= threshold && internalTempDifference < maxTempDifference)
-                {
-                    maxPreheatDuration = 0;
-                }
-
-                // Set the preheat duration unless it is already set to that value
+                // Apply the preheat duration (unless it is already set to that value)
                 if (maxPreheatDuration != engineersData[device.ZoneName].MaxPreheatDuration)
                 {
                     await _neoHub.SetPreheatDuration(device.ZoneName, maxPreheatDuration, stoppingToken);
@@ -113,9 +99,75 @@ namespace NeoConnect
                 }
             }
         }
-        
+
+        private int CalculateMaxPreheatDuration(ForecastDay forecastToday, int roc, NeoDevice device, ComfortLevel nextInterval)
+        {
+            //get external temperature forecast for the hours either side of the next interval.                    
+            var forecastExternalThisHour = forecastToday.Hour[nextInterval.Time.Hour];
+            var forecastExternalNextHour = forecastToday.Hour[nextInterval.Time.Hour < 23 ? nextInterval.Time.Hour + 1 : 23];
+            var forecastExternalTemp = AverageTemp(forecastExternalThisHour, forecastExternalNextHour);
+
+            //apply weightings to roc based on external temperature and aspect
+            var tempWeighting = GetExternalTempWeighting(forecastExternalTemp);
+            var sunnyAspectWeighting = GetSunnyAspectWeighting(device, forecastExternalNextHour);
+
+            var weightedRoc = roc * tempWeighting * sunnyAspectWeighting;
+
+            // get the expected preheat duration required to achieve the desired temperature in hours
+            var temperatureIncreaseRequired = Math.Max(0, nextInterval.TargetTemp - Convert.ToDouble(device.ActualTemp));
+            var maxPreheatDuration = (int)Math.Ceiling((weightedRoc * temperatureIncreaseRequired) / 60);
+
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug($"###################################################");
+                _logger.LogDebug($"# Device: {device.ZoneName}");
+                _logger.LogDebug($"# Current Temperature: {device.ActualTemp}c.");
+                _logger.LogDebug($"# Desired Temperature: {nextInterval.TargetTemp}c (at {nextInterval.Time}).");
+                _logger.LogDebug($"# Rate of Change: {roc} minutes per degree c.");
+                _logger.LogDebug($"# External Temperature Weighting (for {forecastExternalTemp}c): {tempWeighting}");
+                _logger.LogDebug($"# Sunny Aspect Weighting: {sunnyAspectWeighting}");
+                _logger.LogDebug($"# Weighted Rate of Change: {weightedRoc} minutes per degree c.");
+                _logger.LogDebug($"# Calculated Max Preheat Required: {maxPreheatDuration}h.");
+                _logger.LogDebug($"###################################################");
+            }
+
+            // ensure preheat duration is not longer than the max allowed
+            maxPreheatDuration = Math.Min(maxPreheatDuration, _config.PreHeatOverride.MaxPreheatHours);
+            return maxPreheatDuration;
+        }
+
+        private double GetSunnyAspectWeighting(NeoDevice device, ForecastHour forecastExternalNextHour)
+        {
+            var sunnyAspectWeighting = 1.0;
+            if (forecastExternalNextHour.IsDaytime == 1 && forecastExternalNextHour.Condition?.Code == 1000) //1000 == "Sunny"
+            {
+                // if the sun will be up and weather condition will be sunny, apply sun-based weightings
+                sunnyAspectWeighting = _config.PreHeatOverride.SunnyAspectROCWeightings
+                    .FirstOrDefault(o => o.Devices.Contains(device.ZoneName, StringComparer.OrdinalIgnoreCase))?.Weighting ?? 1;
+            }
+
+            return sunnyAspectWeighting;
+        }
+
+        private double GetExternalTempWeighting(double forecastExternalTemp)
+        {
+            return _config.PreHeatOverride.ExternalTempROCWeightings
+                                    .OrderByDescending(o => o.Temp)
+                                    .FirstOrDefault(o => forecastExternalTemp >= o.Temp)?.Weighting ?? 1;
+        }
+
+        private static double AverageTemp(params ForecastHour[] forecastHours)
+        {
+            return Math.Round(forecastHours.Select(fh => fh.Temp).Average(), 1);
+        }
+
         public async Task RunRecipeBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken)
         {
+            if(!_config.Recipes.Enabled)
+            {                
+                return;
+            }
+
             if (_logger.IsEnabled(LogLevel.Debug))
             {
                 _logger.LogDebug($"ExternalTempThreshold: {_config.Recipes.ExternalTempThreshold}");
@@ -132,8 +184,9 @@ namespace NeoConnect
             if (recipeToRun != _config.Recipes.LastRecipeRun)
             {
                 await _neoHub.RunRecipe(recipeToRun, stoppingToken);
+
                 changeList.Add($"{recipeToRun} Recipe was run.");
-                _config.Recipes.LastRecipeRun = recipeToRun;
+                _config.Recipes.LastRecipeRun = recipeToRun;                
             }
             else
             {

@@ -28,8 +28,8 @@ namespace NeoConnect
                 _logger.LogInformation("Running Action: RunRecipeBasedOnWeatherConditions.");
                 await _heatingService.RunRecipeBasedOnWeatherConditions(forecast.ForecastDay[0], stoppingToken);
 
-                _logger.LogInformation("Running Action: SetPreheatDurationBasedOnWeatherConditions.");
-                await _heatingService.SetPreheatDurationBasedOnWeatherConditions(forecast.ForecastDay[0], stoppingToken);
+                _logger.LogInformation("Running Action: SetMaxPreheatDurationBasedOnWeatherConditions.");
+                await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecast.ForecastDay[0], stoppingToken);
 
                 var changes = _heatingService.GetChangesMade();
                 if (changes.Count == 0)

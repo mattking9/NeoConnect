@@ -83,17 +83,6 @@ namespace NeoConnect
 
         [JsonPropertyName("wake")]
         public object[] Wake { get; set; }
-
-        private IEnumerable<ComfortLevel> ToComfortLevels() => 
-            new ComfortLevel[]
-            {
-                new ComfortLevel(Wake),
-                new ComfortLevel(Leave),
-                new ComfortLevel(Return),
-                new ComfortLevel(Sleep)
-            }.OrderBy(i => i.Time);
-        
-        
     }
 
     public class EngineersData
