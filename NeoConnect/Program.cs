@@ -33,8 +33,9 @@ namespace NeoConnect
             builder.Services.AddScoped<IHeatingService, HeatingService>();
             builder.Services.AddScoped<INeoHubService, NeoHubService>();            
             builder.Services.AddScoped<IEmailService, EmailService>();
-            builder.Services.AddScoped<ActionsService>();
-                        
+            builder.Services.AddScoped<ClientWebSocketWrapper>();
+            builder.Services.AddScoped<ActionsService>();            
+
             builder.Services.AddHostedService<Worker>();
 
             var host = builder.Build();
