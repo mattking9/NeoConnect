@@ -36,9 +36,6 @@ namespace NeoConnect
         [JsonPropertyName("ACTUAL_TEMP")]
         public string ActualTemp { get; set; }
 
-        [JsonPropertyName("SET_TEMP")]
-        public string TargetTemp { get; set; }
-
         [JsonPropertyName("ZONE_NAME")]
         public string ZoneName { get; set; }
 
