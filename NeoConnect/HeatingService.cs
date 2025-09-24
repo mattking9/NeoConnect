@@ -90,7 +90,7 @@ namespace NeoConnect
                 // Apply the preheat duration (unless it is already set to that value)
                 if (maxPreheatDuration != engineersData[device.ZoneName].MaxPreheatDuration)
                 {
-                    await _neoHub.SetPreheatDuration(device.ZoneName, maxPreheatDuration, stoppingToken);
+                    //await _neoHub.SetPreheatDuration(device.ZoneName, maxPreheatDuration, stoppingToken);
                     changeList.Add($"{device.ZoneName} preheat duration was changed to {maxPreheatDuration} hours.");
                 }
                 else
