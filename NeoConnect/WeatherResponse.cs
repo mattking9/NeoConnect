@@ -4,21 +4,23 @@ namespace NeoConnect
 {
     public class WeatherResponse
     {
+        [JsonPropertyName("forecast")]
         public Forecast Forecast { get; set; }
     }
 
     public class Forecast
     {
+        [JsonPropertyName("forecastday")]
         public List<ForecastDay> ForecastDay { get; set; } = new List<ForecastDay>();
     }
 
     public class ForecastDay
     {
-        public DateOnly Date { get; set; }
+        [JsonPropertyName("day")]
         public ForecastDayDaily Day { get; set; }
 
-        public List<ForecastHour> Hour { get; set; } = new List<ForecastHour>();        
-
+        [JsonPropertyName("hour")]
+        public List<ForecastHour> Hour { get; set; } = new List<ForecastHour>();
     }
 
     public class ForecastDayDaily
@@ -31,18 +33,25 @@ namespace NeoConnect
     {        
         public string? Time { get; set; }
 
-        [JsonPropertyName("Is_Day")]
+        [JsonPropertyName("is_day")]
         public int IsDaytime { get; set; }
 
-        [JsonPropertyName("Temp_C")]
+        [JsonPropertyName("temp_c")]
         public double Temp { get; set; }
+
+        [JsonPropertyName("condition")]
         public ForecastCondition? Condition { get;set;}
     }
 
     public class ForecastCondition
     {
+        [JsonPropertyName("text")]
         public string? Text { get; set; }
+
+        [JsonPropertyName("icon")]
         public string? Icon { get; set; }
+
+        [JsonPropertyName("code")]
         public int? Code { get; set; }
     }
 }
