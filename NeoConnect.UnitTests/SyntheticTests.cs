@@ -23,7 +23,6 @@ namespace NeoConnect.UnitTests
 
             _config = new HeatingConfig
             {
-                SummerProfileName = "Summer",
                 PreHeatOverride = new PreHeatOverrideConfig
                 {
                     MaxPreheatHours = 4,                    
@@ -52,6 +51,7 @@ namespace NeoConnect.UnitTests
                 IsThermostat = true,
                 IsOffline = false,
                 ActiveProfile = 1,
+                SetTemp = "15"
             };
             _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(new List<NeoDevice>() { _device });
 
@@ -76,7 +76,7 @@ namespace NeoConnect.UnitTests
 
             var engineersData = new Dictionary<string, EngineersData>
             {
-                { "Lounge", new EngineersData { MaxPreheatDuration = -1 } }
+                { "Lounge", new EngineersData { MaxPreheatDuration = -1, FrostTemp = 12 } }
             };            
             _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);            
             

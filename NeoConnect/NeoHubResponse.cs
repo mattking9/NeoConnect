@@ -37,7 +37,7 @@ namespace NeoConnect
         public string ActualTemp { get; set; }
 
         [JsonPropertyName("SET_TEMP")]
-        public string TargetTemp { get; set; }
+        public string SetTemp { get; set; }
 
         [JsonPropertyName("ZONE_NAME")]
         public string ZoneName { get; set; }
@@ -47,6 +47,9 @@ namespace NeoConnect
 
         [JsonPropertyName("OFFLINE")]
         public bool IsOffline { get; set; }
+
+        [JsonPropertyName("STANDBY")]
+        public bool IsStandby { get; set; }
     }
 
     public class Profile
@@ -94,7 +97,10 @@ namespace NeoConnect
         public int DeviceType { get; set; }
 
         [JsonPropertyName("MAX_PREHEAT")]
-        public int MaxPreheatDuration { get; set; }       
+        public int MaxPreheatDuration { get; set; }
+
+        [JsonPropertyName("FROST_TEMP")]
+        public int FrostTemp { get; set; }
     }
 }
 

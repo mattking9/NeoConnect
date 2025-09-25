@@ -31,7 +31,6 @@ namespace NeoConnect.UnitTests
 
             _config = new HeatingConfig
             {
-                SummerProfileName = "Summer",
                 PreHeatOverride = new PreHeatOverrideConfig
                 {
                     MaxPreheatHours = 3,
@@ -124,7 +123,7 @@ namespace NeoConnect.UnitTests
             var profiles = new Dictionary<int, Profile>
             {
                 {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                    1, new Profile { ProfileId = 1 }
                 }
             };
 
@@ -160,7 +159,7 @@ namespace NeoConnect.UnitTests
             var profiles = new Dictionary<int, Profile>
             {
                 {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                    1, new Profile { ProfileId = 1 }
                 }
             };
 
@@ -213,7 +212,7 @@ namespace NeoConnect.UnitTests
         }
 
         [Test]
-        public async Task SetPreheatDurationBasedOnWeatherConditions_DeviceInSummerMode_SkipsDevice()
+        public async Task SetPreheatDurationBasedOnWeatherConditions_DeviceInStandByMode_SkipsDevice()
         {
             // Arrange
             var forecastToday = CreateForecastHours(false, false, 20.0);
@@ -225,20 +224,64 @@ namespace NeoConnect.UnitTests
                     ZoneName = "Lounge",
                     IsThermostat = true,
                     IsOffline = false,
-                    ActiveProfile = 1
+                    IsStandby = true, // StandBy mode
+                    ActiveProfile = 1,
+                    SetTemp = "16"
                 }
             };
 
             var profiles = new Dictionary<int, Profile>
             {
                 {
-                    1, new Profile { ProfileId = 1, ProfileName = "Summer" }  // Same as _config.SummerProfileName
+                    1, new Profile { ProfileId = 1 } 
                 }
             };
 
             var engineersData = new Dictionary<string, EngineersData>
             {
                 { "Lounge", new EngineersData { MaxPreheatDuration = 2 } }
+            };
+
+            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+            _mockNeoHubService.Setup(s => s.GetAllProfiles(It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
+            _mockNeoHubService.Setup(s => s.GetEngineersData(It.IsAny<CancellationToken>())).ReturnsAsync(engineersData);
+
+            // Act
+            await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecastToday, _cts.Token);
+
+            // Assert
+            Assert.That(_heatingService.GetChangesMade().Count == 0);
+            _mockNeoHubService.Verify(s => s.SetPreheatDuration(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Test]
+        public async Task SetPreheatDurationBasedOnWeatherConditions_DeviceHasAntiFrostTempSet_SkipsDevice()
+        {
+            // Arrange
+            var forecastToday = CreateForecastHours(false, false, 20.0);
+
+            var devices = new List<NeoDevice>
+            {
+                new NeoDevice
+                {
+                    ZoneName = "Lounge",
+                    IsThermostat = true,
+                    IsOffline = false,
+                    ActiveProfile = 1,
+                    SetTemp = "12" // At frost temperature
+                }
+            };
+
+            var profiles = new Dictionary<int, Profile>
+            {
+                {
+                    1, new Profile { ProfileId = 1 }
+                }
+            };
+
+            var engineersData = new Dictionary<string, EngineersData>
+            {
+                { "Lounge", new EngineersData { MaxPreheatDuration = 2, FrostTemp = 12 } }
             };
 
             _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
@@ -266,7 +309,8 @@ namespace NeoConnect.UnitTests
                     ZoneName = "Lounge",
                     IsThermostat = true,
                     IsOffline = false,
-                    ActiveProfile = 1
+                    ActiveProfile = 1,
+                    SetTemp = "16"
                 }
             };
 
@@ -275,7 +319,7 @@ namespace NeoConnect.UnitTests
             var profiles = new Dictionary<int, Profile>
             {
                 {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                    1, new Profile { ProfileId = 1 }
                 }
             };
 
@@ -308,7 +352,7 @@ namespace NeoConnect.UnitTests
             var profiles = new Dictionary<int, Profile>
             {
                 {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                    1, new Profile { ProfileId = 1 }
                 }
             };
 
@@ -320,6 +364,7 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
+                    SetTemp = "16",
                     ActualTemp = "19" //at ROC of 60, preheat duration should be 2 hours
                 }
             };
@@ -355,7 +400,7 @@ namespace NeoConnect.UnitTests
             var profiles = new Dictionary<int, Profile>
             {
                 {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                    1, new Profile { ProfileId = 1 }
                 }
             };
 
@@ -367,7 +412,8 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
-                    ActualTemp = "19" //at ROC of 60, preheat duration should be 2 hours
+                    ActualTemp = "19", //at ROC of 60, preheat duration should be 2 hours
+                    SetTemp = "16"
                 }
             };
 
@@ -402,7 +448,7 @@ namespace NeoConnect.UnitTests
             var profiles = new Dictionary<int, Profile>
             {
                 {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                    1, new Profile { ProfileId = 1 }
                 }
             };
 
@@ -414,7 +460,8 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
-                    ActualTemp = "15"  //at ROC of 60, preheat duration should be 6 hours
+                    ActualTemp = "15",  //at ROC of 60, preheat duration should be 6 hours
+                    SetTemp = "15"
                 }
             };
 
@@ -455,7 +502,7 @@ namespace NeoConnect.UnitTests
             var profiles = new Dictionary<int, Profile>
             {
                 {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                    1, new Profile { ProfileId = 1 }
                 }
             };
 
@@ -467,7 +514,8 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
-                    ActualTemp = "19"  //at ROC of 60, preheat duration should be 2 hours
+                    ActualTemp = "19",  //at ROC of 60, preheat duration should be 2 hours
+                    SetTemp = "16"
                 }
             };
 
@@ -508,7 +556,7 @@ namespace NeoConnect.UnitTests
             var profiles = new Dictionary<int, Profile>
             {
                 {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                    1, new Profile { ProfileId = 1 }
                 }
             };
 
@@ -520,7 +568,8 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
-                    ActualTemp = "19.0" //at ROC of 60, preheat duration should be 2 hours
+                    ActualTemp = "19.0", //at ROC of 60, preheat duration should be 2 hours
+                    SetTemp = "16"
                 }
             };
 
@@ -561,7 +610,7 @@ namespace NeoConnect.UnitTests
             var profiles = new Dictionary<int, Profile>
             {
                 {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                    1, new Profile { ProfileId = 1 }
                 }
             };
 
@@ -573,7 +622,8 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
-                    ActualTemp = "19.0" //at ROC of 60, unweighted preheat duration would be 2 hours
+                    ActualTemp = "19.0", //at ROC of 60, unweighted preheat duration would be 2 hours
+                    SetTemp = "16"
                 }
             };
 
@@ -614,7 +664,7 @@ namespace NeoConnect.UnitTests
             var profiles = new Dictionary<int, Profile>
             {
                 {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                    1, new Profile { ProfileId = 1 }
                 }
             };
 
@@ -626,7 +676,8 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
-                    ActualTemp = "19.0" //at ROC of 60, unweighted preheat duration would be 2 hours
+                    ActualTemp = "19.0", //at ROC of 60, unweighted preheat duration would be 2 hours
+                    SetTemp = "16"
                 }
             };
 
@@ -666,7 +717,7 @@ namespace NeoConnect.UnitTests
             var profiles = new Dictionary<int, Profile>
             {
                 {
-                    1, new Profile { ProfileId = 1, ProfileName = "Winter" }
+                    1, new Profile { ProfileId = 1 }
                 }
             };
 
@@ -678,7 +729,8 @@ namespace NeoConnect.UnitTests
                     IsThermostat = true,
                     IsOffline = false,
                     ActiveProfile = 1,
-                    ActualTemp = "19.0" //at ROC of 60, unweighted preheat duration would be 2 hours
+                    ActualTemp = "19.0", //at ROC of 60, unweighted preheat duration would be 2 hours
+                    SetTemp = "16"
                 }
             };
 

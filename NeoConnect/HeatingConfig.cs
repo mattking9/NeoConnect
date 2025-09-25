@@ -1,9 +1,7 @@
 ﻿namespace NeoConnect
 {
     public class HeatingConfig
-    {
-        public string SummerProfileName { get; set; }
-        
+    {   
         public PreHeatOverrideConfig PreHeatOverride { get; set; } = new PreHeatOverrideConfig();      
         public RecipeConfig Recipes { get; set; } = new RecipeConfig();
     }
