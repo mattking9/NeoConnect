@@ -34,11 +34,11 @@ namespace NeoConnect
                 _logger.LogInformation("Next run scheduled for " + nextRunUtc.ToLocalTime().ToString("G"));
                 await Task.Delay(nextRunUtc - utcNow, stoppingToken);
 
-                using var scope = _serviceScopeFactory.CreateScope();
-                var actionsService = scope.ServiceProvider.GetRequiredService<ActionsService>();
-                await actionsService.PerformActions(stoppingToken);
-
-                await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+                using (var scope = _serviceScopeFactory.CreateScope())
+                {
+                    var actionsService = scope.ServiceProvider.GetRequiredService<ActionsService>();
+                    await actionsService.PerformActions(stoppingToken);
+                }
             }
         }
     }

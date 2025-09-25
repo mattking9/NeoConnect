@@ -40,6 +40,8 @@ namespace NeoConnect
                 return;
             }
 
+            _logger.LogInformation("Running Action: SetMaxPreheatDurationBasedOnWeatherConditions.");
+
             if (_logger.IsEnabled(LogLevel.Debug))
             {
                 _logger.LogDebug($"Default MaxPreheatHours: {_config.PreHeatOverride.MaxPreheatHours}c");                
@@ -162,6 +164,8 @@ namespace NeoConnect
             {                
                 return;
             }
+
+            _logger.LogInformation("Running Action: RunRecipeBasedOnWeatherConditions.");
 
             if (_logger.IsEnabled(LogLevel.Debug))
             {

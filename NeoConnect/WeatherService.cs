@@ -1,5 +1,5 @@
 ﻿using System.Net.Http.Headers;
-using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace NeoConnect
 {
@@ -43,11 +43,12 @@ namespace NeoConnect
                     response.EnsureSuccessStatusCode();
 
                     // Parse the response content.
-                    var result = await response.Content.ReadFromJsonAsync<WeatherResponse>(stoppingToken) ?? throw new Exception($"Error parsing weather response json.");
+                    var result = await response.Content.ReadAsStringAsync(stoppingToken);
+                    var weatherResponse = JsonSerializer.Deserialize(result, NeoConnectJsonContext.Default.WeatherResponse) ?? throw new Exception($"Error parsing weather json: {result}");
 
                     _logger.LogInformation("Weather forecast successfully retrieved.");
 
-                    return result.Forecast;
+                    return weatherResponse.Forecast;
                 }
             }
         }
