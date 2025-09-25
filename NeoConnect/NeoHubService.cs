@@ -11,16 +11,17 @@ namespace NeoConnect
         private readonly Uri _uri;
         private readonly string _key;
 
-        private ClientWebSocket _ws;
+        private ClientWebSocketWrapper _ws;
 
         public NeoHubService()
         {                
         }
 
-        public NeoHubService(ILogger<NeoHubService> logger, IConfiguration config)
+        public NeoHubService(ILogger<NeoHubService> logger, IConfiguration config, ClientWebSocketWrapper ws)
         {
             _logger = logger;
             _config = config;
+            _ws = ws;
 
             _uri = _config.GetValue<Uri>("NeoHub:Uri") ?? throw new ArgumentNullException("Config value for NeoHub.Uri is required");
             _key = _config.GetValue<string>("NeoHub:ApiKey") ?? throw new ArgumentNullException("Config value for NeoHub.ApiKey is required");
@@ -28,10 +29,7 @@ namespace NeoConnect
 
         public async Task Connect(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Connecting to NeoHub.");
-
-            _ws = new ClientWebSocket();
-            _ws.Options.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            _logger.LogInformation("Connecting to NeoHub.");            
 
             try
             {
@@ -51,17 +49,12 @@ namespace NeoConnect
         public async Task Disconnect(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Closing NeoHub connection.");
-
-            if (_ws == null)
-            {
-                return;
-            }
-
+            
             if (_ws.State == WebSocketState.Open)
             {
                 try
                 {
-                    await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client closed", cancellationToken);
+                    await _ws.CloseAsync(cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -69,7 +62,6 @@ namespace NeoConnect
                 }
             }
             _ws.Dispose();
-            _ws = null;
         }
 
         public async Task<List<NeoDevice>> GetDevices(CancellationToken cancellationToken)
@@ -175,7 +167,7 @@ namespace NeoConnect
                 }}""
             }}";
 
-            if (_ws == null || _ws.State != WebSocketState.Open)
+            if (_ws.State != WebSocketState.Open)
             {
                 throw new InvalidOperationException("WebSocket is not connected.");
             }
@@ -184,46 +176,20 @@ namespace NeoConnect
             {
                 _logger.LogDebug("Sending Command:\r\n" + message);
             }
-
-            var bytes = Encoding.UTF8.GetBytes(message);
-            var segment = new ArraySegment<byte>(bytes);
-            await _ws.SendAsync(segment, WebSocketMessageType.Text, true, cancellationToken);
+            
+            await _ws.SendAllAsync(message, cancellationToken);
         }
 
         private async Task<NeoHubResponse> ReceiveMessage(CancellationToken cancellationToken)
         {
-            if (_ws == null || _ws.State != WebSocketState.Open)
-            {
-                throw new InvalidOperationException("WebSocket is not connected.");
-            }
-
-            var buffer = new byte[1024];
-            var segment = new ArraySegment<byte>(buffer);
-
-            var readComplete = false;
-            var responseJson = new StringBuilder();
-
-            while (!readComplete)
-            {
-                var result = await _ws.ReceiveAsync(segment, cancellationToken);
-
-                if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", cancellationToken);
-                    break;
-                }
-
-                responseJson.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
-
-                readComplete = result.EndOfMessage;
-            }
+            var responseJson = await _ws.ReceiveAllAsync(cancellationToken);
 
             if (_logger.IsEnabled(LogLevel.Debug))
             {
                 _logger.LogDebug("Received message:\r\n" + responseJson);
             }
 
-            return JsonSerializer.Deserialize<NeoHubResponse>(responseJson.ToString()) ?? throw new Exception($"Could not parse json: {responseJson}");
+            return JsonSerializer.Deserialize<NeoHubResponse>(responseJson) ?? throw new Exception($"Could not parse json: {responseJson}");
         }
     }
 }
