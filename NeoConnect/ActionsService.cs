@@ -23,13 +23,13 @@ namespace NeoConnect
             {
                 var forecast = await _weatherService.GetForecast(stoppingToken);
 
-                await _heatingService.Init(stoppingToken);
-
-                _logger.LogInformation("Running Action: RunRecipeBasedOnWeatherConditions.");
-                await _heatingService.RunRecipeBasedOnWeatherConditions(forecast.ForecastDay[0], stoppingToken);
+                await _heatingService.Init(stoppingToken);                
 
                 _logger.LogInformation("Running Action: SetMaxPreheatDurationBasedOnWeatherConditions.");
                 await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecast.ForecastDay[0], stoppingToken);
+
+                _logger.LogInformation("Running Action: RunRecipeBasedOnWeatherConditions.");
+                await _heatingService.RunRecipeBasedOnWeatherConditions(forecast.ForecastDay[0], stoppingToken);
 
                 var changes = _heatingService.GetChangesMade();
                 if (changes.Count == 0)

@@ -109,9 +109,6 @@ namespace NeoConnect
             await SendMessage("RUN_RECIPE", $"['{recipeName}']", 4, cancellationToken);
 
             await ReceiveMessage(cancellationToken);
-
-            // wait five seconds to allow time for recipe to complete before continuing.
-            await Task.Delay(5000, cancellationToken);
         }
 
         public async Task SetPreheatDuration(string zoneName, int maxPreheatDuration, CancellationToken cancellationToken)

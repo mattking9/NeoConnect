@@ -46,7 +46,7 @@ namespace NeoConnect
             }
 
             //fetch all the necessary data from the NeoHub
-            var devices = (await _neoHub.GetDevices(stoppingToken)).Where(d => d.IsThermostat && !d.IsOffline);
+            var devices = (await _neoHub.GetDevices(stoppingToken)).Where(d => d.IsThermostat && !d.IsOffline && d.ActiveProfile != 0);
             var profiles = await _neoHub.GetAllProfiles(stoppingToken);            
             var engineersData = await _neoHub.GetEngineersData(stoppingToken);
             var rocData = await _neoHub.GetROCData(devices.Select(d => d.ZoneName).ToArray(), stoppingToken);
@@ -58,15 +58,10 @@ namespace NeoConnect
                 Profile deviceProfile;
                 profiles.TryGetValue(device.ActiveProfile, out deviceProfile);
 
-                if (deviceProfile == null)
+                // Skip device if is in Standby mode or if set temperature is at or below frost temperature
+                if (device.IsStandby || Convert.ToDouble(device.SetTemp) <= engineersData[device.ZoneName].FrostTemp)
                 {
-                    _logger.LogInformation($"Ignoring {device.ZoneName} as no profile set.");
-                    continue;
-                }
-
-                if (deviceProfile.ProfileName == _config.SummerProfileName)
-                {
-                    _logger.LogInformation($"Ignoring {device.ZoneName} as Summer Profile is active.");
+                    _logger.LogInformation($"Ignoring {device.ZoneName}. Standby Mode or Anti-Frost Setting.");
                     continue;
                 }
 
@@ -76,7 +71,7 @@ namespace NeoConnect
                 // If nextInterval is null then no more intervals today, therefore do nothing
                 if (nextInterval == null)
                 {
-                    _logger.LogInformation($"No more intervals today for {device.ZoneName}. Doing nothing.");
+                    _logger.LogInformation($"Ignoring {device.ZoneName}. No more intervals today.");
                     continue;
                 }
 
@@ -91,11 +86,11 @@ namespace NeoConnect
                 if (maxPreheatDuration != engineersData[device.ZoneName].MaxPreheatDuration)
                 {
                     await _neoHub.SetPreheatDuration(device.ZoneName, maxPreheatDuration, stoppingToken);
-                    changeList.Add($"{device.ZoneName} preheat duration was changed to {maxPreheatDuration} hours.");
+                    changeList.Add($"Max Preheat duration was changed to {maxPreheatDuration} hours for {device.ZoneName}.");
                 }
                 else
                 {
-                    _logger.LogInformation($"Preheat duration already set to {maxPreheatDuration} hours for {device.ZoneName}.");
+                    _logger.LogInformation($"Max Preheat duration already set to {maxPreheatDuration} hours for {device.ZoneName}.");
                 }
             }
         }
@@ -103,13 +98,13 @@ namespace NeoConnect
         private int CalculateMaxPreheatDuration(ForecastDay forecastToday, int roc, NeoDevice device, ComfortLevel nextInterval)
         {
             //get external temperature forecast for the hours either side of the next interval.                    
-            var forecastExternalThisHour = forecastToday.Hour[nextInterval.Time.Hour];
-            var forecastExternalNextHour = forecastToday.Hour[nextInterval.Time.Hour < 23 ? nextInterval.Time.Hour + 1 : 23];
-            var forecastExternalTemp = AverageTemp(forecastExternalThisHour, forecastExternalNextHour);
+            var forecastHourOf = forecastToday.Hour[nextInterval.Time.Hour];
+            var forecastHourAfter = forecastToday.Hour[nextInterval.Time.Hour < 23 ? nextInterval.Time.Hour + 1 : 23];
+            var forecastExternalTemp = AverageTemp(forecastHourOf, forecastHourAfter);
 
             //apply weightings to roc based on external temperature and aspect
             var tempWeighting = GetExternalTempWeighting(forecastExternalTemp);
-            var sunnyAspectWeighting = GetSunnyAspectWeighting(device, forecastExternalNextHour);
+            var sunnyAspectWeighting = GetSunnyAspectWeighting(device, forecastHourAfter);
 
             var weightedRoc = roc * tempWeighting * sunnyAspectWeighting;
 
@@ -136,12 +131,12 @@ namespace NeoConnect
             return maxPreheatDuration;
         }
 
-        private double GetSunnyAspectWeighting(NeoDevice device, ForecastHour forecastExternalNextHour)
+        private double GetSunnyAspectWeighting(NeoDevice device, ForecastHour forecast)
         {
             var sunnyAspectWeighting = 1.0;
-            if (forecastExternalNextHour.IsDaytime == 1 && forecastExternalNextHour.Condition?.Code == 1000) //1000 == "Sunny"
+            if (forecast.IsDaytime == 1 && forecast.Condition?.Code == 1000) //1000 == "Sunny"
             {
-                // if the sun will be up and weather condition will be sunny, apply sun-based weightings
+                // if the sun will be up and weather condition will be sunny, apply sun-based weighting
                 sunnyAspectWeighting = _config.PreHeatOverride.SunnyAspectROCWeightings
                     .FirstOrDefault(o => o.Devices.Contains(device.ZoneName, StringComparer.OrdinalIgnoreCase))?.Weighting ?? 1;
             }
