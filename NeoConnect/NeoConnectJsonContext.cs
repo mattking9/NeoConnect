@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 namespace NeoConnect
 {
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+    [JsonSerializable(typeof(HeatingConfig))]
     [JsonSerializable(typeof(WeatherResponse))]
     [JsonSerializable(typeof(NeoHubResponse))]
     [JsonSerializable(typeof(NeoHubLiveData))]

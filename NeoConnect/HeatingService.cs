@@ -9,7 +9,6 @@ namespace NeoConnect
         private readonly INeoHubService _neoHub;
 
         private List<string> changeList = new List<string>();
-        private string lastRecipeRun;
 
         public HeatingService(IOptions<HeatingConfig> config, ILogger<HeatingService> logger, INeoHubService neoHub)
         {
@@ -189,7 +188,7 @@ namespace NeoConnect
             }
             else
             {
-                _logger.LogInformation($"Recipe {lastRecipeRun} has already run.");
+                _logger.LogInformation($"Recipe {recipeToRun} has already run.");
             }
         }
     }
