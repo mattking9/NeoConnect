@@ -60,7 +60,7 @@ namespace NeoConnect.UnitTests
             var mockResponseContent = @"
             {
                 ""forecast"": {
-                    ""forecastDay"": [
+                    ""forecastday"": [
                         {   
                             ""date"":""2025-09-04"", 
                             ""day"": {
@@ -69,11 +69,11 @@ namespace NeoConnect.UnitTests
                             ""hour"": [
                                 {
                                     ""time"":""00:00"",
-                                    ""Temp_C"":18.5
+                                    ""temp_c"":18.5
                                 },
                                 {
                                     ""time"":""01:00"",
-                                    ""Temp_C"":18.0
+                                    ""temp_c"":18.0
                                 }
                             ]
                         }
