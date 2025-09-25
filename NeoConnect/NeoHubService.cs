@@ -71,7 +71,7 @@ namespace NeoConnect
             await SendMessage("GET_LIVE_DATA", "0", 1, cancellationToken);
 
             var result = await ReceiveMessage(cancellationToken);
-            return JsonSerializer.Deserialize<NeoHubLiveData>(result.ResponseJson)?.Devices ?? throw new Exception($"Error parsing GET_LIVE_DATA json: {result.ResponseJson}");
+            return JsonSerializer.Deserialize(result.ResponseJson, NeoConnectJsonContext.Default.NeoHubLiveData)?.Devices ?? throw new Exception($"Error parsing GET_LIVE_DATA json: {result.ResponseJson}");
         }
 
         public async Task<Dictionary<string, EngineersData>> GetEngineersData(CancellationToken cancellationToken)
@@ -79,7 +79,7 @@ namespace NeoConnect
             await SendMessage("GET_ENGINEERS", "0", 3, cancellationToken);
 
             var result = await ReceiveMessage(cancellationToken);
-            return JsonSerializer.Deserialize<Dictionary<string, EngineersData>>(result.ResponseJson) ?? throw new Exception($"Error parsing GET_ENGINEERS json: {result.ResponseJson}");
+            return JsonSerializer.Deserialize(result.ResponseJson, NeoConnectJsonContext.Default.DictionaryStringEngineersData) ?? throw new Exception($"Error parsing GET_ENGINEERS json: {result.ResponseJson}");
         }
 
         public async Task<Dictionary<int, Profile>> GetAllProfiles(CancellationToken cancellationToken)
@@ -90,7 +90,7 @@ namespace NeoConnect
 
             var result = await ReceiveMessage(cancellationToken);
 
-            var profiles = JsonSerializer.Deserialize<Dictionary<string, Profile>>(result.ResponseJson) ?? throw new Exception($"Error parsing GET_PROFILES json: {result.ResponseJson}");
+            var profiles = JsonSerializer.Deserialize(result.ResponseJson, NeoConnectJsonContext.Default.DictionaryStringProfile) ?? throw new Exception($"Error parsing GET_PROFILES json: {result.ResponseJson}");
             return profiles.ToDictionary(kvp => kvp.Value.ProfileId, kvp => kvp.Value);
         }
 
@@ -99,7 +99,7 @@ namespace NeoConnect
             await SendMessage("VIEW_ROC", $"[{string.Join(',', devices.Select(d => $"'{d}'"))}]", 5, cancellationToken);
 
             var result = await ReceiveMessage(cancellationToken);
-            return JsonSerializer.Deserialize<Dictionary<string, int>>(result.ResponseJson) ?? throw new Exception($"Error parsing VIEW_ROC json: {result.ResponseJson}");
+            return JsonSerializer.Deserialize(result.ResponseJson, NeoConnectJsonContext.Default.DictionaryStringInt32) ?? throw new Exception($"Error parsing VIEW_ROC json: {result.ResponseJson}");
         }
 
         public async Task RunRecipe(string recipeName, CancellationToken cancellationToken)
@@ -189,7 +189,7 @@ namespace NeoConnect
                 _logger.LogDebug("Received message:\r\n" + responseJson);
             }
 
-            return JsonSerializer.Deserialize<NeoHubResponse>(responseJson) ?? throw new Exception($"Could not parse json: {responseJson}");
+            return JsonSerializer.Deserialize(responseJson, NeoConnectJsonContext.Default.NeoHubResponse) ?? throw new Exception($"Could not parse json: {responseJson}");
         }
     }
 }
