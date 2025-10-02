@@ -1,6 +1,6 @@
 ﻿
 
-namespace NeoConnect
+namespace NeoConnect.Services
 {
     public interface INeoHubService
     {

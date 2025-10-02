@@ -1,6 +1,8 @@
+
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace NeoConnect
+namespace NeoConnect.Services
 {
     public class HeatingService : IHeatingService
     {

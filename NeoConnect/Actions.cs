@@ -1,13 +1,15 @@
+using NeoConnect.Services;
+
 namespace NeoConnect
 {
-    public class ActionsService
+    public class Actions
     {
         private readonly IHeatingService _heatingService;
-        private readonly ILogger<ActionsService> _logger;
+        private readonly ILogger<Actions> _logger;
         private readonly IWeatherService _weatherService;
         private readonly IEmailService _emailService;
 
-        public ActionsService(IHeatingService heatingService, ILogger<ActionsService> logger, IWeatherService weatherService, IEmailService emailService)
+        public Actions(IHeatingService heatingService, ILogger<Actions> logger, IWeatherService weatherService, IEmailService emailService)
         {
             _logger = logger;
             _weatherService = weatherService;

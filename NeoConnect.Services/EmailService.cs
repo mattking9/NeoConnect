@@ -1,7 +1,9 @@
-﻿using System.Net;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System.Net;
 using System.Net.Mail;
 
-namespace NeoConnect
+namespace NeoConnect.Services
 {
     public class EmailService : IEmailService
     {

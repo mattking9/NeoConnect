@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
+using NeoConnect.Services;
 using System.Text.Json;
 
 namespace NeoConnect.UnitTests

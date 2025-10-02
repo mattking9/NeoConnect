@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace NeoConnect
+namespace NeoConnect.Services
 {
     public class WeatherResponse
     {

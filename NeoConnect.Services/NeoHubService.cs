@@ -1,8 +1,9 @@
-﻿using System.Net.WebSockets;
-using System.Text;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System.Net.WebSockets;
 using System.Text.Json;
 
-namespace NeoConnect
+namespace NeoConnect.Services
 {
     public class NeoHubService : INeoHubService
     {

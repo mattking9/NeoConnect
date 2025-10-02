@@ -1,14 +1,15 @@
 using Microsoft.Extensions.Logging;
 using Moq;
+using NeoConnect.Services;
 
 namespace NeoConnect.UnitTests
 {
     [TestFixture]
     public class ActionsServiceTests
     {
-        private ActionsService _actionsService;
+        private Actions _actionsService;
         private Mock<IHeatingService> _mockHeatingService;
-        private Mock<ILogger<ActionsService>> _mockLogger;
+        private Mock<ILogger<Actions>> _mockLogger;
         private Mock<IWeatherService> _mockWeatherService;
         private Mock<IEmailService> _mockEmailService;
         private CancellationTokenSource _cts;
@@ -17,12 +18,12 @@ namespace NeoConnect.UnitTests
         public void Setup()
         {
             _mockHeatingService = new Mock<IHeatingService>();
-            _mockLogger = new Mock<ILogger<ActionsService>>();
+            _mockLogger = new Mock<ILogger<Actions>>();
             _mockWeatherService = new Mock<IWeatherService>();
             _mockEmailService = new Mock<IEmailService>();
             _cts = new CancellationTokenSource();
             
-            _actionsService = new ActionsService(
+            _actionsService = new Actions(
                 _mockHeatingService.Object, 
                 _mockLogger.Object, 
                 _mockWeatherService.Object, 

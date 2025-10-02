@@ -1,3 +1,5 @@
+using NeoConnect.Services;
+
 namespace NeoConnect
 {
     public class Program
@@ -34,7 +36,7 @@ namespace NeoConnect
             builder.Services.AddScoped<INeoHubService, NeoHubService>();            
             builder.Services.AddScoped<IEmailService, EmailService>();
             builder.Services.AddScoped<ClientWebSocketWrapper>();
-            builder.Services.AddScoped<ActionsService>();            
+            builder.Services.AddScoped<Actions>();            
 
             builder.Services.AddHostedService<Worker>();
 
@@ -50,7 +52,7 @@ namespace NeoConnect
             {
                 // Otherwise, run once and exit
                 using var scope = host.Services.CreateScope();
-                var actions = scope.ServiceProvider.GetRequiredService<ActionsService>();                
+                var actions = scope.ServiceProvider.GetRequiredService<Actions>();                
                 actions.PerformActions(default).GetAwaiter().GetResult();
             }
         }

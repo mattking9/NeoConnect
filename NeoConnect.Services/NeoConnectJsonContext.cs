@@ -2,7 +2,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace NeoConnect
+namespace NeoConnect.Services
 {
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
     [JsonSerializable(typeof(HeatingConfig))]

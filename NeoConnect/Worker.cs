@@ -36,7 +36,7 @@ namespace NeoConnect
 
                 using (var scope = _serviceScopeFactory.CreateScope())
                 {
-                    var actionsService = scope.ServiceProvider.GetRequiredService<ActionsService>();
+                    var actionsService = scope.ServiceProvider.GetRequiredService<Actions>();
                     await actionsService.PerformActions(stoppingToken);
                 }
             }

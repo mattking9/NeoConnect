@@ -1,7 +1,9 @@
-﻿using System.Net.Http.Headers;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
-namespace NeoConnect
+namespace NeoConnect.Services
 {
     public class WeatherService : IWeatherService
     {

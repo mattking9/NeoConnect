@@ -18,11 +18,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="NUnit.Framework" />
+    <ProjectReference Include="..\NeoConnect.Services\NeoConnect.Services.csproj" />
+    <ProjectReference Include="..\NeoConnect\NeoConnect.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NeoConnect\NeoConnect.csproj" />
+    <Using Include="NUnit.Framework" />
   </ItemGroup>
 
 </Project>
