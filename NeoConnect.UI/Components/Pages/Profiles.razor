@@ -1,0 +1,76 @@
+﻿@page "/profiles"
+@using NeoConnect.Services
+@inject INeoHubService neoHubService
+@attribute [StreamRendering]
+
+<PageTitle>Profiles</PageTitle>
+
+<h1>Profiles</h1>
+
+@if (profiles == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                <th></th>
+                <th colspan="8" style="text-align:center">Weekdays</th>
+                <th colspan="8" style="text-align:center">Weekends</th>
+            </tr>
+            <tr>
+                <th></th>
+                <th colspan="2" style="text-align:center">Wake</th>
+                <th colspan="2" style="text-align:center">Leave</th>
+                <th colspan="2" style="text-align:center">Return</th>
+                <th colspan="2" style="text-align:center">Sleep</th>
+                <th colspan="2" style="text-align:center">Wake</th>
+                <th colspan="2" style="text-align:center">Leave</th>
+                <th colspan="2" style="text-align:center">Return</th>
+                <th colspan="2" style="text-align:center">Sleep</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var profile in profiles)
+            {
+                <tr>
+                    <th>@profile.Key</th>
+                    
+                    @foreach (var cl in profile.Value)
+                    {
+                        <td>@cl.Time.ToString(@"HH\:mm")</td><td>@cl.TargetTemp</td>
+                    }
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private Dictionary<string, ComfortLevel[]>? profiles = new Dictionary<string, ComfortLevel[]>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await neoHubService.Connect(CancellationToken.None);
+        var profileData = await neoHubService.GetAllProfiles(CancellationToken.None);
+        await neoHubService.Disconnect(CancellationToken.None);
+
+        foreach (var profile in profileData)
+        {
+            var comfortLevels = new ComfortLevel[8];
+            comfortLevels[0] = new ComfortLevel(profile.Value.Schedule.Weekdays.Wake);
+            comfortLevels[1] = new ComfortLevel(profile.Value.Schedule.Weekdays.Leave);
+            comfortLevels[2] = new ComfortLevel(profile.Value.Schedule.Weekdays.Return);
+            comfortLevels[3] = new ComfortLevel(profile.Value.Schedule.Weekdays.Sleep);
+            comfortLevels[4] = new ComfortLevel(profile.Value.Schedule.Weekends.Wake);
+            comfortLevels[5] = new ComfortLevel(profile.Value.Schedule.Weekends.Leave);
+            comfortLevels[6] = new ComfortLevel(profile.Value.Schedule.Weekends.Return);
+            comfortLevels[7] = new ComfortLevel(profile.Value.Schedule.Weekends.Sleep);
+
+            profiles.Add(profile.Value.ProfileName, comfortLevels);
+        }
+    }
+}
