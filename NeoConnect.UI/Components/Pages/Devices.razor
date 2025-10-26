@@ -20,7 +20,8 @@ else
                 <th>Current Profile</th>
                 <th>Current Temp</th>
                 <th>Set Temp</th>
-                <th>ROC</th>
+                <th>Rate of Change</th>
+                <th>Max Preheat</th>
             </tr>            
         </thead>
         <tbody>
@@ -29,9 +30,10 @@ else
                 <tr>
                     <th>@device.ZoneName @(device.IsStandby ? "(Standby)" : "")</th>
                     <td>@GetProfileName(device.ActiveProfile)</td>
-                    <td>@device.ActualTemp</td>
-                    <td>@device.SetTemp</td>
-                    <td>@GetROC(device.ZoneName)</td>                    
+                    <td>@device.ActualTemp°</td>
+                    <td>@device.SetTemp°</td>
+                    <td>@GetROC(device.ZoneName)</td>
+                    <td>@GetPreheat(device.ZoneName) hours</td>
                 </tr>
             }
         </tbody>
@@ -42,6 +44,7 @@ else
     private List<NeoDevice>? devices = new List<NeoDevice>();
     private Dictionary<string, int> rocs = new Dictionary<string, int>();
     private Dictionary<int, Profile> profiles = new Dictionary<int, Profile>();
+    private Dictionary<string, EngineersData> engineers = new Dictionary<string, EngineersData>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -49,12 +52,20 @@ else
         devices = await neoHubService.GetDevices(CancellationToken.None);
         profiles = await neoHubService.GetAllProfiles(CancellationToken.None);
         rocs = await neoHubService.GetROCData(devices.Select(d => d.ZoneName).ToArray(), CancellationToken.None);
+        engineers = await neoHubService.GetEngineersData(CancellationToken.None);
         await neoHubService.Disconnect(CancellationToken.None);        
     }
 
-    private int GetROC(string deviceName)
+    private string GetROC(string deviceName)
     {
-        return rocs[deviceName];
+        var time = TimeSpan.FromMinutes(rocs[deviceName]);
+        return string.Format("{0} ({1:0}:{2:00})", time.TotalMinutes, (int)time.TotalHours, time.Minutes);
+    }
+
+    private int GetPreheat(string deviceName)
+    {        
+        var eng = engineers[deviceName];
+        return eng.MaxPreheatDuration;
     }
 
     private string GetProfileName(int profileId)

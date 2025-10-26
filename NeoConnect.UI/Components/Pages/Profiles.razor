@@ -13,34 +13,34 @@
 }
 else
 {
-    <table class="table table-striped table-bordered">
+    <table class="table table-striped" width="100%">
         <thead>
             <tr>
                 <th></th>
-                <th colspan="8" style="text-align:center">Weekdays</th>
-                <th colspan="8" style="text-align:center">Weekends</th>
+                <th colspan="4" style="text-align:center">Weekdays</th>
+                <th colspan="4" style="text-align:center">Weekends</th>
             </tr>
             <tr>
                 <th></th>
-                <th colspan="2" style="text-align:center">Wake</th>
-                <th colspan="2" style="text-align:center">Leave</th>
-                <th colspan="2" style="text-align:center">Return</th>
-                <th colspan="2" style="text-align:center">Sleep</th>
-                <th colspan="2" style="text-align:center">Wake</th>
-                <th colspan="2" style="text-align:center">Leave</th>
-                <th colspan="2" style="text-align:center">Return</th>
-                <th colspan="2" style="text-align:center">Sleep</th>
+                <th style="text-align:center">Wake</th>
+                <th style="text-align:center">Leave</th>
+                <th style="text-align:center">Return</th>
+                <th style="text-align:center">Sleep</th>
+                <th style="text-align:center">Wake</th>
+                <th style="text-align:center">Leave</th>
+                <th style="text-align:center">Return</th>
+                <th style="text-align:center">Sleep</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var profile in profiles)
             {
                 <tr>
-                    <th>@profile.Key</th>
+                    <th width="12%">@profile.Key</th>
                     
                     @foreach (var cl in profile.Value)
                     {
-                        <td>@cl.Time.ToString(@"HH\:mm")</td><td>@cl.TargetTemp</td>
+                        <td width="11%" style="text-align:center">@cl.Time.ToString(@"HH\:mm")<br /><span style="font-weight:bold;font-size:1.2em;">@cl.TargetTemp</span>°</td>
                     }
 
                 </tr>
