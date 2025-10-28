@@ -23,21 +23,11 @@ namespace NeoConnect
             {
                 var forecast = await _weatherService.GetForecast(stoppingToken);
 
-                await _heatingService.Init(stoppingToken);                
-                
-                await _heatingService.SetMaxPreheatDurationBasedOnWeatherConditions(forecast.ForecastDay[0], stoppingToken);
-                
-                await _heatingService.RunRecipeBasedOnWeatherConditions(forecast.ForecastDay[0], stoppingToken);
+                await _heatingService.Init(stoppingToken);
 
-                var changes = _heatingService.GetChangesMade();
-                if (changes.Count == 0)
-                {
-                    _logger.LogInformation("No changes were made.");
-                }
-                else
-                {
-                    await _emailService.SendSummaryEmail(changes, stoppingToken);
-                }
+                await _heatingService.BoostTowelRailWhenBathroomIsCold(stoppingToken);
+
+                await _heatingService.ReduceSetTempWhenExternalTempIsWarm(forecast.ForecastDay[0], stoppingToken);                
             }
             catch (OperationCanceledException)
             {

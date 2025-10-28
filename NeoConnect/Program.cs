@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace NeoConnect
 {
     public class Program
@@ -10,17 +12,15 @@ namespace NeoConnect
             Console.WriteLine(@"| |\  |  __/ (_) | |__| (_) | | | | | | |  __/ (__| |_ ");
             Console.WriteLine(@"|_| \_|\___|\___/ \____\___/|_| |_|_| |_|\___|\___|\__|");
             Console.WriteLine("");
-
+            
             var builder = Host.CreateApplicationBuilder(args);
 
             builder.Services.AddSystemd();
 
             builder.Services.AddLogging(logging =>
-                logging.AddSimpleConsole(options =>
-                {
-                    options.SingleLine = true;
-                    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
-                })
+                logging
+                    .AddSimpleConsole(options => { options.SingleLine = true; options.TimestampFormat = "yyyy-MM-dd HH:mm:ss "; })
+                    .AddSystemdConsole()
             );
 
             builder.Services.AddHttpClient();
@@ -36,7 +36,7 @@ namespace NeoConnect
             builder.Services.AddScoped<ClientWebSocketWrapper>();
             builder.Services.AddScoped<ActionsService>();            
 
-            builder.Services.AddHostedService<Worker>();
+            builder.Services.AddHostedService<Worker>();            
 
             var host = builder.Build();
                         
@@ -50,7 +50,7 @@ namespace NeoConnect
             {
                 // Otherwise, run once and exit
                 using var scope = host.Services.CreateScope();
-                var actions = scope.ServiceProvider.GetRequiredService<ActionsService>();                
+                var actions = scope.ServiceProvider.GetRequiredService<ActionsService>();               
                 actions.PerformActions(default).GetAwaiter().GetResult();
             }
         }

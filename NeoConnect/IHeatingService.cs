@@ -3,10 +3,9 @@ namespace NeoConnect
 {
     public interface IHeatingService
     {
-        List<string> GetChangesMade();
         Task Cleanup(CancellationToken stoppingToken);
         Task Init(CancellationToken stoppingToken);
-        Task RunRecipeBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken);
-        Task SetMaxPreheatDurationBasedOnWeatherConditions(ForecastDay forecastToday, CancellationToken stoppingToken);
+        Task ReduceSetTempWhenExternalTempIsWarm(ForecastDay forecastToday, CancellationToken stoppingToken);
+        Task BoostTowelRailWhenBathroomIsCold(CancellationToken stoppingToken);
     }
 }
