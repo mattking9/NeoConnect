@@ -17,11 +17,7 @@ namespace NeoConnect
 
             builder.Services.AddSystemd();
 
-            builder.Services.AddLogging(logging =>
-                logging
-                    .AddSimpleConsole(options => { options.SingleLine = true; options.TimestampFormat = "yyyy-MM-dd HH:mm:ss "; })
-                    .AddSystemdConsole()
-            );
+            builder.Services.AddLogging(logging => logging.AddSystemdConsole());
 
             builder.Services.AddHttpClient();
 

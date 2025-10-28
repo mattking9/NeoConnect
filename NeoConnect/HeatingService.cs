@@ -30,6 +30,8 @@ namespace NeoConnect
         /// <returns></returns>
         public async Task BoostTowelRailWhenBathroomIsCold(CancellationToken stoppingToken)
         {
+            _logger.LogInformation("** BoostTowelRailWhenBathroomIsCold **");
+
             const string BATHROOM = "Bathroom";
             const string TOWEL_RAIL = "Towel Rail";
 
@@ -75,6 +77,8 @@ namespace NeoConnect
         /// <returns></returns>
         public async Task ReduceSetTempWhenExternalTempIsWarm(ForecastDay forecastToday, CancellationToken stoppingToken)
         {
+            _logger.LogInformation("** ReduceSetTempWhenExternalTempIsWarm **");
+
             // get the temperature for the next hour
             var forecastNextHour = forecastToday.Hour[DateTime.Now.Hour < 23 ? DateTime.Now.Hour + 1 : 23];
             if (forecastNextHour.Temp < 11)
