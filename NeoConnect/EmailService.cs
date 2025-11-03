@@ -41,20 +41,27 @@ namespace NeoConnect
                 stoppingToken);
         }
 
-        public async Task SendErrorEmail(Exception error, CancellationToken stoppingToken)
+        public async Task<bool> TrySendErrorEmail(Exception error, CancellationToken stoppingToken)
         {
-            if (error == null)
+            try
             {
-                return;
+                if (error != null)
+                {
+                    _logger.LogInformation("Sending Error Email.");
+
+                    await SendEmail(
+                    "Neo Connect Error",
+                    $"Neo Connect encountered the following error while executing: <h3>{error.Message}</h3><p>{error.StackTrace ?? "(Stack trace unavailable)"}</p>",
+                    true,
+                    stoppingToken);
+                }
+
+                return true;
             }
-
-            _logger.LogInformation("Sending Error Email.");
-
-            await SendEmail(
-                "Neo Connect Error",
-                $"Neo Connect encountered the following error while executing: <h3>{error.Message}</h3><p>{error.StackTrace ?? "(Stack trace unavailable)"}</p>",
-                true,
-                stoppingToken);
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         private async Task SendEmail(string subject, string body, bool isHtml, CancellationToken stoppingToken)

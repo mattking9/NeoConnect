@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 
 namespace NeoConnect
@@ -23,32 +24,57 @@ namespace NeoConnect
 
             builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
-            builder.Services.Configure<HeatingConfig>(builder.Configuration.GetSection("HeatingConfig"));
+            builder.Services.AddSingleton<ReportDataService>();
+            builder.Services.AddSingleton<IEmailService, EmailService>();
 
             builder.Services.AddScoped<IWeatherService, WeatherService>();
             builder.Services.AddScoped<IHeatingService, HeatingService>();
-            builder.Services.AddScoped<INeoHubService, NeoHubService>();            
-            builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<INeoHubService, NeoHubService>();
+            
             builder.Services.AddScoped<ClientWebSocketWrapper>();
-            builder.Services.AddScoped<ActionsService>();            
 
-            builder.Services.AddHostedService<Worker>();            
+            builder.Services.AddSingleton<BoostAction>();
+            builder.Services.AddSingleton<HoldAction>();
+            builder.Services.AddSingleton<ReportDataCollectionAction>();
+
+            builder.Services.AddHostedService<ScheduledWorker<BoostAction>>();
+            builder.Services.AddHostedService<ScheduledWorker<HoldAction>>();
+            builder.Services.AddHostedService<ScheduledWorker<ReportDataCollectionAction>>();
 
             var host = builder.Build();
-                        
-            var config = host.Services.GetRequiredService<IConfiguration>();
-            if (!string.IsNullOrWhiteSpace(config["Schedule"]))
+
+#if DEBUG     
+            using var scope = host.Services.CreateScope();            
+            while (true) 
             {
-                // If a schedule is defined then run worker as a background service.
-                host.Run();                
+                IScheduledAction action = null;
+                Console.WriteLine("Enter a number to run one of the following actions:");
+                Console.WriteLine("(1) BoostAction");
+                Console.WriteLine("(2) HoldAction");
+                Console.WriteLine("(3) ReportDataCollectionAction");
+                var input = Console.ReadLine();
+                switch (input)
+                {
+                    case "1":
+                        action = scope.ServiceProvider.GetRequiredService<BoostAction>();
+                        break;
+                    case "2":
+                        action = scope.ServiceProvider.GetRequiredService<HoldAction>();
+                        break;
+                    case "3":
+                        action = scope.ServiceProvider.GetRequiredService<ReportDataCollectionAction>();
+                        break;
+                    default:                        
+                        break;
+                }
+                
+                action?.Action(default).GetAwaiter().GetResult();
+
+                Console.WriteLine("");
             }
-            else
-            {
-                // Otherwise, run once and exit
-                using var scope = host.Services.CreateScope();
-                var actions = scope.ServiceProvider.GetRequiredService<ActionsService>();               
-                actions.PerformActions(default).GetAwaiter().GetResult();
-            }
+#else
+    host.Run();
+#endif
         }
     }
 }

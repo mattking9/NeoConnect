@@ -1,15 +1,18 @@
 
+
 namespace NeoConnect
 {
     public class HeatingService : IHeatingService
     {
         private readonly ILogger<HeatingService> _logger;
         private readonly INeoHubService _neoHub;
+        private readonly ReportDataService _reportDataService;
 
-        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub)
+        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, ReportDataService reportDataService)
         {
             _logger = logger;
             _neoHub = neoHub;
+            _reportDataService = reportDataService;
         }
 
         public async Task Init(CancellationToken stoppingToken)
@@ -29,9 +32,7 @@ namespace NeoConnect
         /// <param name="stoppingToken">A <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
         /// <returns></returns>
         public async Task BoostTowelRailWhenBathroomIsCold(CancellationToken stoppingToken)
-        {
-            _logger.LogInformation("** BoostTowelRailWhenBathroomIsCold **");
-
+        {            
             const string BATHROOM = "Bathroom";
             const string TOWEL_RAIL = "Towel Rail";
 
@@ -57,44 +58,81 @@ namespace NeoConnect
                 return;
             }
 
+            var profiles = await _neoHub.GetAllProfiles(stoppingToken);
+            var bathroomProfile = profiles[stat.ActiveProfile];
+            var nextComfortLevel = _neoHub.GetNextComfortLevel(bathroomProfile.Schedule, DateTime.Now);
+            if (nextComfortLevel == null)
+            {
+                _logger.LogInformation($"{BATHROOM} has no more comfort levels today.");
+                return;
+            }
+
             //if actual temp is 1 degree less than set temp then run Boost on towel radiator for 1 hour
-            if (Convert.ToDouble(stat.SetTemp) - Convert.ToDouble(stat.ActualTemp) >= 1)
+            var temperatureDifference = Convert.ToDouble(nextComfortLevel.TargetTemp) - Convert.ToDouble(stat.ActualTemp);
+            if (Convert.ToDouble(nextComfortLevel.TargetTemp) - Convert.ToDouble(stat.ActualTemp) >= 1)
             {
                 await _neoHub.Boost([timer.ZoneName], 1, stoppingToken);
+                _reportDataService.Add($"Boosted {timer.ZoneName}");
             }
             else
             {
-                _logger.LogInformation($"Bathroom Boost not required this time.");
+                _logger.LogInformation($"Bathroom Boost not required this time. Bathroom is currently {(temperatureDifference < 0 ? 1-temperatureDifference : temperatureDifference) }c {(temperatureDifference < 0 ? "above" : "below")} target.");
             }
         }
 
 
         /// <summary>
-        /// If it is 11c or more when this method runs, it will turn all stats down by half a degree for 1 hour because the sun will provide additional warming during this time.
+        /// If it is X degress or more when this method runs, it will turn all stats down by half a degree for 1 hour because the sun will provide additional warming during this time.
         /// </summary>
         /// <param name="forecastToday"></param>
         /// <param name="stoppingToken"></param>
         /// <returns></returns>
         public async Task ReduceSetTempWhenExternalTempIsWarm(ForecastDay forecastToday, CancellationToken stoppingToken)
         {
-            _logger.LogInformation("** ReduceSetTempWhenExternalTempIsWarm **");
+            var threshold = 12;
 
             // get the temperature for the next hour
             var forecastNextHour = forecastToday.Hour[DateTime.Now.Hour < 23 ? DateTime.Now.Hour + 1 : 23];
-            if (forecastNextHour.Temp < 11)
+            if (forecastNextHour.Temp < threshold)
             {
-                _logger.LogInformation("Skipping as external temperature for next hour is expected to be below 11c");
+                _logger.LogInformation($"Skipping as external temperature for next hour is expected to be {forecastNextHour.Temp}c which is below threshold {threshold}c");
+                return;
             }
 
             // fetch all the necessary data from the NeoHub
-            var devices = (await _neoHub.GetDevices(stoppingToken)).Where(d => d.IsThermostat && !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);                               
+            var devices = (await _neoHub.GetDevices(stoppingToken)).Where(d => d.IsThermostat && !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);
 
-            _logger.LogInformation($"Found {devices.Count()} Devices.");
-
+            var holdGroup = "ReduceWhenWarm";
             foreach (var device in devices)
             {                
-                await _neoHub.Hold(device.ZoneName, [device.ZoneName], Convert.ToDouble(device.SetTemp) - 0.5, 1, stoppingToken);
+                await _neoHub.Hold(holdGroup, [device.ZoneName], Convert.ToDouble(device.SetTemp) - 0.5, 1, stoppingToken);
             }
+            _reportDataService.Add(devices.Select(d => $"Holding {d.ZoneName} down 0.5c for 1 hour"));
+        }
+
+        public async Task ReportDeviceStatuses(CancellationToken stoppingToken)
+        {
+            var data = new List<string>();
+            var devices = (await _neoHub.GetDevices(stoppingToken)).Where(d => !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);
+
+            foreach (var device in devices)
+            {
+                if (device.IsThermostat && device.IsPreheating)
+                {
+                    data.Add($"Preheat is active for {device.ZoneName}. Current Temperature is {device.ActualTemp}.");
+                }
+                if (device.IsThermostat && device.IsHeating)
+                {
+                    data.Add($"Heating is active for {device.ZoneName}. Current Temperature is {device.ActualTemp} and Target is {device.SetTemp}.");
+                }
+                if (!device.IsThermostat && device.TimerOn)
+                {
+                    data.Add($"{device.ZoneName} is On.");
+                }
+            }
+
+            _logger.LogInformation($"Adding {data.Count} device statuses to report.");
+            _reportDataService.Add(data);
         }
     }
 }

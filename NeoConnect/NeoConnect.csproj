@@ -7,12 +7,7 @@
     <UserSecretsId>dotnet-HeatmiserWorker-4f3b380d-f7ef-41e4-9d0c-2d02cbe66b30</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
-    <ApplicationIcon>neo.ico</ApplicationIcon>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Content Include="neo.ico" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Cronos" Version="0.11.0" />

@@ -50,6 +50,15 @@ namespace NeoConnect
 
         [JsonPropertyName("STANDBY")]
         public bool IsStandby { get; set; }
+
+        [JsonPropertyName("HEAT_ON")]
+        public bool IsHeating { get; set; }
+
+        [JsonPropertyName("PREHEAT_ACTIVE")]
+        public bool IsPreheating { get; set; }
+
+        [JsonPropertyName("TIMER_ON")]
+        public bool TimerOn { get; set; }
     }
 
     public class Profile

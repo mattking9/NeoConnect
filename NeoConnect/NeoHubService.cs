@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace NeoConnect
 {
-    public class NeoHubService : INeoHubService
+    public class NeoHubService : INeoHubService, IDisposable
     {
         private readonly ILogger<NeoHubService> _logger;
         private readonly IConfiguration _config;
@@ -13,6 +13,7 @@ namespace NeoConnect
         private int _inc = 0;
 
         private ClientWebSocketWrapper _ws;
+        private bool disposedValue;
 
         public NeoHubService()
         {                
@@ -62,7 +63,6 @@ namespace NeoConnect
                     _logger.LogWarning("Incomplete WebSocket disconnection: " + ex.Message);
                 }
             }
-            _ws.Dispose();
         }
 
         public async Task<List<NeoDevice>> GetDevices(CancellationToken cancellationToken)
@@ -208,6 +208,25 @@ namespace NeoConnect
             }
 
             return JsonSerializer.Deserialize(responseJson, NeoConnectJsonContext.Default.NeoHubResponse) ?? throw new Exception($"Could not parse json: {responseJson}");
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _ws.Dispose();
+                }
+                
+                disposedValue = true;
+            }
+        }        
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
