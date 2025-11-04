@@ -25,20 +25,17 @@ namespace NeoConnect
             _smtpToAddress = _config.GetValue<string>("Smtp:ToAddress") ?? throw new ArgumentNullException("Config value for Smtp:ToAddress is required");
         }
 
-        public async Task SendSummaryEmail(List<string> deviceStatements, CancellationToken stoppingToken)
+        public async Task SendEmail(string subject, string body, CancellationToken stoppingToken)
         {
-            if (deviceStatements == null || !deviceStatements.Any())
+            if (string.IsNullOrEmpty(body))
             {
+                _logger.LogInformation("No email body. Not sending Email.");
                 return;
             }
 
-            _logger.LogInformation("Sending Summary Email.");
+            _logger.LogInformation("Sending Email.");
 
-            await SendEmail(
-                "Neo Connect Summary",
-                $"Neo Connect made the following changes: <ul>{string.Join("", deviceStatements.Select(x => $"<li>{x}</li>"))}</ul>",
-                true,
-                stoppingToken);
+            await SendEmail(subject, body, true, stoppingToken);
         }
 
         public async Task<bool> TrySendErrorEmail(Exception error, CancellationToken stoppingToken)

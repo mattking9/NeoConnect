@@ -6,9 +6,9 @@ namespace NeoConnect
     {
         private readonly ILogger<HeatingService> _logger;
         private readonly INeoHubService _neoHub;
-        private readonly ReportDataService _reportDataService;
+        private readonly IReportDataService _reportDataService;
 
-        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, ReportDataService reportDataService)
+        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IReportDataService reportDataService)
         {
             _logger = logger;
             _neoHub = neoHub;

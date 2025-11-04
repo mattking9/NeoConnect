@@ -1,18 +1,18 @@
 
 namespace NeoConnect
 {
-    public class BoostAction : IScheduledAction
+    public class BathroomBoostAction : IScheduledAction
     {
         private readonly IConfiguration _config;
         private readonly IServiceScopeFactory _serviceScopeFactory;
 
-        public BoostAction(IConfiguration config, IServiceScopeFactory serviceScopeFactory)
+        public BathroomBoostAction(IConfiguration config, IServiceScopeFactory serviceScopeFactory)
         {
             _config = config;
             _serviceScopeFactory = serviceScopeFactory;
         }
 
-        public string? Name => "Boost";
+        public string? Name => "Bathroom Boost";
 
         public string? Schedule => _config["BoostSchedule"];
 

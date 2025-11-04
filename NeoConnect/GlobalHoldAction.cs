@@ -1,18 +1,18 @@
 
 namespace NeoConnect
 {
-    public class HoldAction : IScheduledAction
+    public class GlobalHoldAction : IScheduledAction
     {
         private readonly IConfiguration _config;
         private readonly IServiceScopeFactory _serviceScopeFactory;
 
-        public HoldAction(IConfiguration config, IServiceScopeFactory serviceScopeFactory)
+        public GlobalHoldAction(IConfiguration config, IServiceScopeFactory serviceScopeFactory)
         {
             _config = config;
             _serviceScopeFactory = serviceScopeFactory;
         }
 
-        public string? Name => "Hold";
+        public string? Name => "Global Hold";
 
         public string? Schedule => _config["HoldSchedule"];
 
