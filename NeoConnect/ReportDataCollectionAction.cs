@@ -19,7 +19,7 @@ namespace NeoConnect
         {            
             using (var scope = _serviceScopeFactory.CreateScope())
             {
-                var heatingService = scope.ServiceProvider.GetRequiredService<IHeatingService>();
+                var heatingService = scope.ServiceProvider.GetService<IHeatingService>();
 
                 await heatingService.Init(stoppingToken);
 

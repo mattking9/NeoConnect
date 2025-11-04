@@ -20,8 +20,8 @@ namespace NeoConnect
         {
             using (var scope = _serviceScopeFactory.CreateScope())
             {
-                var heatingService = scope.ServiceProvider.GetRequiredService<IHeatingService>();
-                var weatherService = scope.ServiceProvider.GetRequiredService<IWeatherService>();
+                var heatingService = scope.ServiceProvider.GetService<IHeatingService>();
+                var weatherService = scope.ServiceProvider.GetService<IWeatherService>();
 
                 var forecast = await weatherService.GetForecast(stoppingToken);
 

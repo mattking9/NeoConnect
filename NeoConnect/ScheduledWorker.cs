@@ -33,7 +33,7 @@ namespace NeoConnect
                 var utcNow = DateTime.UtcNow;
                 var nextRunUtc = cron.GetNextOccurrence(utcNow) ?? utcNow;
 
-                _logger.LogInformation("Next run scheduled for " + nextRunUtc.ToLocalTime().ToString("G"));
+                _logger.LogInformation($"{_action.Name}: Next run scheduled for " + nextRunUtc.ToLocalTime().ToString("G"));
                 await Task.Delay(nextRunUtc - utcNow, stoppingToken);
                 
                 try
