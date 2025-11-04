@@ -41,13 +41,14 @@ namespace NeoConnect.UnitTests
             var token = new CancellationToken();
             var htmlReport = "<h1>NeoConnect Report</h1>";
             _mockReportDataService.Setup(r => r.ToHtmlReportString()).Returns(htmlReport);
-            _mockEmailService.Setup(e => e.SendEmail("NeoConnect Report", htmlReport, token)).Returns(Task.CompletedTask);
+            _mockEmailService.Setup(e => e.SendEmail("NeoConnect Report", htmlReport, token)).ReturnsAsync(true);
 
             // Act
             await _action.Action(token);
 
             // Assert
             _mockEmailService.Verify(e => e.SendEmail("NeoConnect Report", htmlReport, token), Times.Once);
+            _mockReportDataService.Verify(r => r.Clear(), Times.Once);
         }
     }
 }

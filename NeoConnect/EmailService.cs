@@ -25,43 +25,31 @@ namespace NeoConnect
             _smtpToAddress = _config.GetValue<string>("Smtp:ToAddress") ?? throw new ArgumentNullException("Config value for Smtp:ToAddress is required");
         }
 
-        public async Task SendEmail(string subject, string body, CancellationToken stoppingToken)
+        public async Task<bool> SendEmail(string subject, string body, CancellationToken stoppingToken)
         {
             if (string.IsNullOrEmpty(body))
             {
                 _logger.LogInformation("No email body. Not sending Email.");
-                return;
+                return false;
             }
 
             _logger.LogInformation("Sending Email.");
 
-            await SendEmail(subject, body, true, stoppingToken);
+            return await SendEmail(subject, body, true, stoppingToken);
         }
 
-        public async Task<bool> TrySendErrorEmail(Exception error, CancellationToken stoppingToken)
+        public async Task<bool> SendErrorEmail(Exception error, CancellationToken stoppingToken)
         {
-            try
-            {
-                if (error != null)
-                {
-                    _logger.LogInformation("Sending Error Email.");
+            _logger.LogInformation("Sending Error Email.");
 
-                    await SendEmail(
-                    "Neo Connect Error",
-                    $"Neo Connect encountered the following error while executing: <h3>{error.Message}</h3><p>{error.StackTrace ?? "(Stack trace unavailable)"}</p>",
-                    true,
-                    stoppingToken);
-                }
-
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return await SendEmail(
+                "Neo Connect Error",
+                $"Neo Connect encountered the following error: <h3>{error?.Message}</h3><p>{error?.StackTrace ?? "(Stack trace unavailable)"}</p>",
+                true,
+                stoppingToken);            
         }
 
-        private async Task SendEmail(string subject, string body, bool isHtml, CancellationToken stoppingToken)
+        private async Task<bool> SendEmail(string subject, string body, bool isHtml, CancellationToken stoppingToken)
         {
             try
             {
@@ -82,10 +70,13 @@ namespace NeoConnect
                         await smtpClient.SendMailAsync(mailMessage, stoppingToken);
                     }
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending email");
+                return false;
             }
         }
     }

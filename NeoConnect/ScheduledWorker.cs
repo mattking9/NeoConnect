@@ -52,7 +52,7 @@ namespace NeoConnect
                 {
                     _logger.LogError(ex, "Execution Error. Aborting.");
 
-                    await _emailService.TrySendErrorEmail(ex, stoppingToken);
+                    await _emailService.SendErrorEmail(ex, stoppingToken);
                 }
             }
         }

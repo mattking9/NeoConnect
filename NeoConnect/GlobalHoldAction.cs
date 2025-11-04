@@ -1,6 +1,11 @@
 
 namespace NeoConnect
 {
+    /// <summary>
+    /// Represents a scheduled action that adjusts heating settings globally based on weather forecasts.
+    /// </summary>
+    /// <remarks>This action retrieves the weather forecast and adjusts the heating system's settings
+    /// accordingly. The schedule for this action is configured via the application settings.</remarks>
     public class GlobalHoldAction : IScheduledAction
     {
         private readonly IConfiguration _config;

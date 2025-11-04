@@ -1,5 +1,11 @@
 namespace NeoConnect
 {
+    /// <summary>
+    /// Represents a scheduled action that sends the gathered reporting data by email.
+    /// </summary>
+    /// <remarks>This action is designed to be executed on a schedule defined in the application
+    /// configuration. It initializes the heating service, reports device statuses, and performs cleanup
+    /// operations.</remarks>
     public class ReportDataSenderAction : IScheduledAction
     {
         private readonly IConfiguration _config;        
@@ -19,7 +25,8 @@ namespace NeoConnect
 
         public async Task Action(CancellationToken stoppingToken)
         {
-            await _emailService.SendEmail("NeoConnect Report", _reportDataService.ToHtmlReportString(), stoppingToken);
+            if (await _emailService.SendEmail("NeoConnect Report", _reportDataService.ToHtmlReportString(), stoppingToken))
+                _reportDataService.Clear();
         }
     }
 }
