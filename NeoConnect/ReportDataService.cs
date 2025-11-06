@@ -26,6 +26,7 @@ namespace NeoConnect
         public string? ToHtmlReportString()
         {
             StringBuilder sb = new StringBuilder();
+            sb.Append("<html>");
             sb.Append("<h1>NeoConnect Report</h1>");
 
             if (_data.Count == 0)
@@ -34,9 +35,9 @@ namespace NeoConnect
             }
             else
             {
-                foreach (var item in _data)
+                foreach (var item in _data.OrderByDescending(d => d.Key))
                 {
-                    sb.Append($"<h2>{item.Key.ToLongTimeString()}</h2>");
+                    sb.Append($"<h2>{item.Key.ToShortTimeString()}</h2>");
                     sb.Append("<ol>");
                     foreach (var val in item.Value)
                     {
@@ -45,6 +46,7 @@ namespace NeoConnect
                     sb.Append("</ol>");
                 }
             }
+            sb.Append("</html>");
             return sb.ToString();
         }
 

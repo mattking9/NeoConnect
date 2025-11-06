@@ -132,7 +132,11 @@ namespace NeoConnect
             }
 
             _logger.LogInformation($"Adding {data.Count} device statuses to report.");
-            _reportDataService.Add(data);
+
+            if (data.Count > 0)
+            {
+                _reportDataService.Add(data);
+            }
         }
     }
 }
