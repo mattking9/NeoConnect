@@ -33,7 +33,7 @@ namespace NeoConnect
                 var offsetNow = DateTimeOffset.Now;
                 var nextRun = cron.GetNextOccurrence(offsetNow, TimeZoneInfo.Local) ?? offsetNow;
 
-                _logger.LogInformation($"{_action.Name}: Next run scheduled for " + nextRun.ToString("G"));
+                _logger.LogInformation($"{_action.Name}: Next run scheduled for " + nextRun.ToString("dd/MM/yyyy HH:mm:ss"));
                 await Task.Delay(nextRun - offsetNow, stoppingToken);
                 
                 try

@@ -18,4 +18,5 @@ RUN dotnet publish "./NeoConnect.csproj" --runtime linux-musl-x64 -c $BUILD_CONF
 FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine
 WORKDIR /app
 COPY --from=base /app/publish .
+
 ENTRYPOINT ["./NeoConnect"]
