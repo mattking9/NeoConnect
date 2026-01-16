@@ -1,3 +1,4 @@
+using NeoConnect.DataAccess;
 using System.Diagnostics;
 using System.Net;
 
@@ -28,6 +29,7 @@ namespace NeoConnect
 
             builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
+            builder.Services.AddSingleton<DeviceRepository>();
             builder.Services.AddSingleton<IReportDataService, ReportDataService>();
             builder.Services.AddSingleton<IEmailService, EmailService>();
 

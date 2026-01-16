@@ -30,6 +30,9 @@ namespace NeoConnect
 
     public class NeoDevice
     {
+        [JsonPropertyName("DEVICE_ID")]
+        public int DeviceId { get; set; }
+
         [JsonPropertyName("ACTIVE_PROFILE")]
         public int ActiveProfile { get; set; }
 

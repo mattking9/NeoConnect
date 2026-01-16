@@ -88,11 +88,12 @@ namespace NeoConnect
         /// <param name="stoppingToken"></param>
         /// <returns></returns>
         public async Task ReduceSetTempWhenExternalTempIsWarm(ForecastDay forecastToday, CancellationToken stoppingToken)
-        {
-            var threshold = 12;
-
+        {            
             // get the temperature for the next hour
             var forecastNextHour = forecastToday.Hour[DateTime.Now.Hour < 23 ? DateTime.Now.Hour + 1 : 23];
+
+            var threshold = forecastNextHour.IsSunny ? 7 : 12;
+
             if (forecastNextHour.Temp < threshold)
             {
                 _logger.LogInformation($"Skipping as external temperature for next hour is expected to be {forecastNextHour.Temp}c which is below threshold {threshold}c");
@@ -132,6 +133,8 @@ namespace NeoConnect
             }
 
             _logger.LogInformation($"Adding {data.Count} device statuses to report.");
+
+            _reportDataService.AddDeviceData(devices, 0);
 
             if (data.Count > 0)
             {
