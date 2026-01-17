@@ -11,7 +11,7 @@ namespace NeoConnect.UnitTests
         [SetUp]
         public void Setup()
         {
-            _service = new ReportDataService();
+            _service = new ReportDataService(null);
         }
 
         [Test]
