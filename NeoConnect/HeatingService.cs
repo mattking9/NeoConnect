@@ -84,7 +84,7 @@ namespace NeoConnect
 
 
         /// <summary>
-        /// If it is X degress or more when this method runs, it will turn all stats down by half a degree for 1 hour because the sun will provide additional warming during this time.
+        /// If it is X degrees or more when this method runs, it will turn all stats down by half a degree for 1 hour because the sun will provide additional warming during this time.
         /// </summary>
         /// <param name="forecastToday"></param>
         /// <param name="stoppingToken"></param>
