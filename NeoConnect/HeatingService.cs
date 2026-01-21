@@ -78,7 +78,7 @@ namespace NeoConnect
             }
             else
             {
-                _logger.LogInformation($"Bathroom Boost not required this time. Bathroom is currently {(temperatureDifference < 0 ? 1-temperatureDifference : temperatureDifference) }c {(temperatureDifference < 0 ? "above" : "below")} target.");
+                _logger.LogInformation($"Bathroom Boost not required this time. Bathroom is currently {System.Math.Abs(temperatureDifference)}c {(temperatureDifference < 0 ? "above" : "below")} target.");
             }
         }
 
