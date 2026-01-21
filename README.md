@@ -70,9 +70,9 @@ NeoConnect can be containerized and run in Docker for easy deployment and manage
 2. **Run the container:**
    ```sh
    docker run -d --name neoconnect neoconnect:latest \
-      -e ReportDataCollectionSchedule=0 0 * * * \
-      -e ReportDataCollectionSchedule=0 0 * * * \
-      -e ReportDataCollectionSchedule=0 0 * * * \
+      -e ReportDataCollectionSchedule=*/15 * * * * \
+      -e BoostSchedule=0 0 * * * \
+      -e HoldSchedule=0 0 * * * \
       -e NeoHub__Uri=wss://local_hub_uri_and_port \
       -e NeoHub__ApiKey=local_hub_api_key \
       -e WeatherApi__ApiKey=your_weatherapi.com_api_key \
