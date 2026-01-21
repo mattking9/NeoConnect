@@ -115,7 +115,6 @@ namespace NeoConnect
 
         public async Task LogDeviceStatuses(CancellationToken stoppingToken)
         {
-            var data = new List<string>();
             var devices = (await _neoHub.GetDevices(stoppingToken)).Where(d => !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);            
 
             _logger.LogInformation($"Writing device statuses to database.");
