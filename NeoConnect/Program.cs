@@ -41,13 +41,11 @@ namespace NeoConnect
 
             builder.Services.AddSingleton<BathroomBoostAction>();
             builder.Services.AddSingleton<GlobalHoldAction>();
-            builder.Services.AddSingleton<ReportDataCollectionAction>();
-            builder.Services.AddSingleton<ReportDataSenderAction>();
+            builder.Services.AddSingleton<ReportDataCollectionAction>();            
 
             builder.Services.AddHostedService<ScheduledWorker<BathroomBoostAction>>();
             builder.Services.AddHostedService<ScheduledWorker<GlobalHoldAction>>();
-            builder.Services.AddHostedService<ScheduledWorker<ReportDataCollectionAction>>();
-            builder.Services.AddHostedService<ScheduledWorker<ReportDataSenderAction>>();
+            builder.Services.AddHostedService<ScheduledWorker<ReportDataCollectionAction>>();            
 
             var host = builder.Build();
 
@@ -60,8 +58,7 @@ namespace NeoConnect
                 Console.WriteLine("Type 's' to run to schedule or enter a number to run one of the following actions:");
                 Console.WriteLine("(1) BoostAction");
                 Console.WriteLine("(2) HoldAction");
-                Console.WriteLine("(3) ReportDataCollectionAction");
-                Console.WriteLine("(4) ReportDataSenderAction");
+                Console.WriteLine("(3) ReportDataCollectionAction");                
                 input = Console.ReadLine();
                 switch (input)
                 {
@@ -73,10 +70,7 @@ namespace NeoConnect
                         break;
                     case "3":
                         action = scope.ServiceProvider.GetRequiredService<ReportDataCollectionAction>();
-                        break;
-                    case "4":
-                        action = scope.ServiceProvider.GetRequiredService<ReportDataSenderAction>();
-                        break;
+                        break;                    
                     default:                        
                         break;
                 }

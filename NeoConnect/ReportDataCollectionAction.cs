@@ -29,7 +29,7 @@ namespace NeoConnect
 
                 await heatingService.Init(stoppingToken);
 
-                await heatingService.ReportDeviceStatuses(stoppingToken);
+                await heatingService.LogDeviceStatuses(stoppingToken);
 
                 await heatingService.Cleanup(stoppingToken);
             }

@@ -5,10 +5,11 @@ NeoConnect is a cross-platform service designed to automate and optimize Heatmis
 ## Features
 
 - **Smart Heating Management:**
-  - Adjusts preheat times for individual thermostats based on the weather forecast for the day ahead to avoid unnecessary heating when natural temperature increases are expected.
-  - Runs user-defined recipes (e.g. switching between winter and summer profiles) based on the forecast external temperature.
+  - Prevents unnecessary heating by reducing the set temperature down when warm sunshine is forecast.
+  - If a room is under temperature, can turn on other available devices to provide an additional boost.
+  - Writes device data to a database for analysis.
 - **Fully-Configurable Schedule:**
-  - User-configurable schedule ensures it runs exactly when you need it to.
+  - User-configurable schedule ensures each automation runs exactly when you need it to.
 - **Direct NeoHub Connection:**
   - Connects directly to NeoHub devices without needing to expose them to the internet.
 - **Email Reports:**
@@ -16,12 +17,12 @@ NeoConnect is a cross-platform service designed to automate and optimize Heatmis
 
 ## Cross-Platform Service
 
-NeoConnect is implemented as a .NET Worker Service, making it suitable for running as a background service on both Windows and Linux (systemd) environments. It targets .NET 8, ensuring compatibility across major platforms.
+NeoConnect is a .NET Service, suitable for both Windows and Linux
 
 ## Configuration
 
 Settings are managed via appsettings.json or environment variables. Key settings include:
-- Schedule
+- Schedules
 - NeoHub connection details
 - Heating variables and threshold values
 - Weather API integration
@@ -29,7 +30,7 @@ Settings are managed via appsettings.json or environment variables. Key settings
 
 ## Scheduling
 
-While running in the background, the service will trigger according to the schedule defined in the 'Schedule' app setting / environment variable.
+While running in the background, the service will trigger according to the schedules defined in app settings / environment variables.
 
 The schedule is defined using a Cron Expression - a mask which defines fixed times, dates and intervals. The mask consists of minute, hour, day-of-month, month and day-of-week fields:
 
@@ -51,7 +52,7 @@ The schedule is defined using a Cron Expression - a mask which defines fixed tim
 | `30,45-15/2 1 * * *` | Every 2 minute from 1:00 AM to 01:15 AM and from 1:45 AM to 1:59 AM and at 1:30 AM    |
 | `0 0 * * MON-FRI`    | At 00:00, Monday through Friday                                                       |
 
-Note, if you do not require the service to run to a schedule (e.g. if the service is being managed by an external scheduler, or if you just want to test it), you can simply omit the Schedule and it will trigger immediately.
+
 
 ## Requirements
 
@@ -69,7 +70,9 @@ NeoConnect can be containerized and run in Docker for easy deployment and manage
 2. **Run the container:**
    ```sh
    docker run -d --name neoconnect neoconnect:latest \
-      -e Schedule=0 2 * * * \
+      -e ReportDataCollectionSchedule=0 0 * * * \
+      -e ReportDataCollectionSchedule=0 0 * * * \
+      -e ReportDataCollectionSchedule=0 0 * * * \
       -e NeoHub__Uri=wss://local_hub_uri_and_port \
       -e NeoHub__ApiKey=local_hub_api_key \
       -e WeatherApi__ApiKey=your_weatherapi.com_api_key \

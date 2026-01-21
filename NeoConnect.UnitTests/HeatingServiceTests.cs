@@ -8,6 +8,7 @@ namespace NeoConnect.UnitTests
     {
         private HeatingService _heatingService;
         private Mock<INeoHubService> _mockNeoHubService;
+        private Mock<IEmailService> _mockEmailService;
         private Mock<IReportDataService> _mockReportDataService;
         private Mock<ILogger<HeatingService>> _mockLogger;
         private CancellationTokenSource _cts;
@@ -16,11 +17,12 @@ namespace NeoConnect.UnitTests
         public void Setup()
         {
             _mockNeoHubService = new Mock<INeoHubService>();
+            _mockEmailService = new Mock<IEmailService>();
             _mockReportDataService = new Mock<IReportDataService>();
             _mockLogger = new Mock<ILogger<HeatingService>>();
             _mockLogger.Setup(l => l.IsEnabled(It.IsAny<LogLevel>())).Returns(true);
             _cts = new CancellationTokenSource();
-            _heatingService = new HeatingService(_mockLogger.Object, _mockNeoHubService.Object, _mockReportDataService.Object);
+            _heatingService = new HeatingService(_mockLogger.Object, _mockNeoHubService.Object, _mockEmailService.Object, _mockReportDataService.Object);
         }
 
         [TearDown]
@@ -87,7 +89,7 @@ namespace NeoConnect.UnitTests
 
             // Assert
             _mockNeoHubService.Verify(s => s.Boost(new[] { "Towel Rail" }, 1, It.IsAny<CancellationToken>()), Times.Once);
-            _mockReportDataService.Verify(r => r.Add(It.Is<string>(str => str.Contains("Boosted"))), Times.Once);
+            _mockEmailService.Verify(e => e.SendInfoEmail(It.Is<string>(str => str.Contains("Boosted")), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
@@ -122,7 +124,7 @@ namespace NeoConnect.UnitTests
 
             // Assert
             _mockNeoHubService.Verify(s => s.Boost(It.IsAny<string[]>(), 1, It.IsAny<CancellationToken>()), Times.Never);
-            _mockReportDataService.Verify(r => r.Add(It.IsAny<string>()), Times.Never);
+            _mockEmailService.Verify(e => e.SendInfoEmail(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Test]
@@ -146,7 +148,7 @@ namespace NeoConnect.UnitTests
 
             // Assert
             _mockNeoHubService.Verify(s => s.Hold("ReduceWhenWarm", It.IsAny<string[]>() , It.IsAny<double>(), 1, It.IsAny<CancellationToken>()), Times.Exactly(devices.Count));
-            _mockReportDataService.Verify(r => r.Add(It.IsAny<IEnumerable<string>>()), Times.Once);
+            _mockEmailService.Verify(e => e.SendInfoEmail(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
@@ -171,32 +173,8 @@ namespace NeoConnect.UnitTests
 
             // Assert
             _mockNeoHubService.Verify(s => s.Hold(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<double>(), 1, It.IsAny<CancellationToken>()), Times.Never);
-            _mockReportDataService.Verify(r => r.Add(It.IsAny<IEnumerable<string>>()), Times.Never);
-        }
-
-        [Test]
-        public async Task ReportDeviceStatuses_AddsCorrectStatusMessages()
-        {
-            // Arrange
-            var devices = new List<NeoDevice>
-            {
-                new NeoDevice { ZoneName = "Zone1", IsThermostat = true, IsOffline = false, IsStandby = false, ActiveProfile = 1, IsPreheating = true, ActualTemp = "19" },
-                new NeoDevice { ZoneName = "Zone2", IsThermostat = true, IsOffline = false, IsStandby = false, ActiveProfile = 1, IsHeating = true, ActualTemp = "20", SetTemp = "21" },
-                new NeoDevice { ZoneName = "Zone3", IsThermostat = false, IsOffline = false, IsStandby = false, ActiveProfile = 1, TimerOn = true }
-            };
-
-            _mockNeoHubService.Setup(s => s.GetDevices(It.IsAny<CancellationToken>())).ReturnsAsync(devices);
-
-            // Act
-            await _heatingService.ReportDeviceStatuses(_cts.Token);
-
-            // Assert
-            _mockReportDataService.Verify(r => r.Add(It.Is<IEnumerable<string>>(data =>
-                data.Any(s => s.Contains("Preheat is active for Zone1")) &&
-                data.Any(s => s.Contains("Heating is active for Zone2")) &&
-                data.Any(s => s.Contains("Zone3 is On."))
-            )), Times.Once);
-        }
+            _mockEmailService.Verify(e => e.SendInfoEmail(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()), Times.Never);
+        }        
 
         [Test]
         public async Task BoostTowelRailWhenBathroomIsCold_LogsAndReturns_WhenBathroomDeviceNotFound()

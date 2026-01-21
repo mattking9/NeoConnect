@@ -7,6 +7,6 @@ namespace NeoConnect
         Task Init(CancellationToken stoppingToken);
         Task ReduceSetTempWhenExternalTempIsWarm(ForecastDay forecastToday, CancellationToken stoppingToken);
         Task BoostTowelRailWhenBathroomIsCold(CancellationToken stoppingToken);
-        Task ReportDeviceStatuses(CancellationToken stoppingToken);
+        Task LogDeviceStatuses(CancellationToken stoppingToken);
     }
 }

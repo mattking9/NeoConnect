@@ -6,12 +6,14 @@ namespace NeoConnect
     {
         private readonly ILogger<HeatingService> _logger;
         private readonly INeoHubService _neoHub;
+        private readonly IEmailService _emailService;
         private readonly IReportDataService _reportDataService;
 
-        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IReportDataService reportDataService)
+        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IEmailService emailService, IReportDataService reportDataService)
         {
             _logger = logger;
             _neoHub = neoHub;
+            _emailService = emailService;
             _reportDataService = reportDataService;
         }
 
@@ -32,7 +34,7 @@ namespace NeoConnect
         /// <param name="stoppingToken">A <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
         /// <returns></returns>
         public async Task BoostTowelRailWhenBathroomIsCold(CancellationToken stoppingToken)
-        {            
+        {
             const string BATHROOM = "Bathroom";
             const string TOWEL_RAIL = "Towel Rail";
 
@@ -72,7 +74,7 @@ namespace NeoConnect
             if (Convert.ToDouble(nextComfortLevel.TargetTemp) - Convert.ToDouble(stat.ActualTemp) >= 1)
             {
                 await _neoHub.Boost([timer.ZoneName], 1, stoppingToken);
-                _reportDataService.Add($"Boosted {timer.ZoneName}");
+                await _emailService.SendInfoEmail($"Boosted {timer.ZoneName}", stoppingToken);
             }
             else
             {
@@ -108,40 +110,16 @@ namespace NeoConnect
             {                
                 await _neoHub.Hold(holdGroup, [device.ZoneName], Convert.ToDouble(device.SetTemp) - 0.5, 1, stoppingToken);
             }
-            _reportDataService.Add(devices.Select(d => $"Holding {d.ZoneName} down 0.5c for 1 hour"));
+            await _emailService.SendInfoEmail(devices.Select(d => $"Holding {d.ZoneName} down 0.5c for 1 hour"), stoppingToken);
         }
 
-        public async Task ReportDeviceStatuses(CancellationToken stoppingToken)
+        public async Task LogDeviceStatuses(CancellationToken stoppingToken)
         {
             var data = new List<string>();
-            var devices = (await _neoHub.GetDevices(stoppingToken)).Where(d => !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);
-
-            foreach (var device in devices)
-            {
-                if (device.IsThermostat && device.IsPreheating)
-                {
-                    data.Add($"Preheat is active for {device.ZoneName}. Current Temperature is {device.ActualTemp}.");
-                }
-                if (device.IsThermostat && device.IsHeating)
-                {
-                    data.Add($"Heating is active for {device.ZoneName}. Current Temperature is {device.ActualTemp} and Target is {device.SetTemp}.");
-                }
-                if (!device.IsThermostat && device.TimerOn)
-                {
-                    data.Add($"{device.ZoneName} is On.");
-                }
-            }
+            var devices = (await _neoHub.GetDevices(stoppingToken)).Where(d => !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);            
 
             _logger.LogInformation($"Writing device statuses to database.");
             _reportDataService.AddDeviceData(devices, 0);
-
-            _logger.LogInformation($"Adding {data.Count} device statuses to report.");
-            
-
-            if (data.Count > 0)
-            {
-                _reportDataService.Add(data);
-            }
         }
     }
 }
