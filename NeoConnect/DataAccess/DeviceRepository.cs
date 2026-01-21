@@ -20,12 +20,14 @@ namespace NeoConnect.DataAccess
         {
             using (var connection = new SqliteConnection(_connectionString))
             {
-                foreach (var deviceState in deviceStates)
+                const string sql = "INSERT INTO DeviceState (DeviceId, SetTemp, ActualTemp, HeatOn, PreheatActive, OutsideTemp, Timestamp) " +
+                                   "VALUES (@DeviceId, @SetTemp, @ActualTemp, @HeatOn, @PreheatActive, @OutsideTemp, @Timestamp)";
+
+                connection.Open();
+                using (var transaction = connection.BeginTransaction())
                 {
-                    connection.Execute(
-                    "INSERT INTO DeviceState (DeviceId, SetTemp, ActualTemp, HeatOn, PreheatActive, OutsideTemp, Timestamp) " +
-                    "VALUES (@DeviceId, @SetTemp, @ActualTemp, @HeatOn, @PreheatActive, @OutsideTemp, @Timestamp)",
-                    deviceState);
+                    connection.Execute(sql, deviceStates, transaction);
+                    transaction.Commit();
                 }
             }
         }

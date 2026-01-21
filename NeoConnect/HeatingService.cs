@@ -78,13 +78,13 @@ namespace NeoConnect
             }
             else
             {
-                _logger.LogInformation($"Bathroom Boost not required this time. Bathroom is currently {(temperatureDifference < 0 ? 1-temperatureDifference : temperatureDifference) }c {(temperatureDifference < 0 ? "above" : "below")} target.");
+                _logger.LogInformation($"Bathroom Boost not required this time. Bathroom is currently {System.Math.Abs(temperatureDifference)}c {(temperatureDifference < 0 ? "above" : "below")} target.");
             }
         }
 
 
         /// <summary>
-        /// If it is X degress or more when this method runs, it will turn all stats down by half a degree for 1 hour because the sun will provide additional warming during this time.
+        /// If it is X degrees or more when this method runs, it will turn all stats down by half a degree for 1 hour because the sun will provide additional warming during this time.
         /// </summary>
         /// <param name="forecastToday"></param>
         /// <param name="stoppingToken"></param>
@@ -115,7 +115,6 @@ namespace NeoConnect
 
         public async Task LogDeviceStatuses(CancellationToken stoppingToken)
         {
-            var data = new List<string>();
             var devices = (await _neoHub.GetDevices(stoppingToken)).Where(d => !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);            
 
             _logger.LogInformation($"Writing device statuses to database.");
