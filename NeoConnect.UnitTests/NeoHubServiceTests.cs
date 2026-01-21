@@ -514,7 +514,6 @@ namespace NeoConnect.UnitTests
         {
             // Arrange
             var mockLogger = new Mock<ILogger<NeoHubService>>();
-            var mockConfig = new Mock<IConfiguration>();
             var mockWs = new Mock<ClientWebSocketWrapper>();
             var token = new CancellationToken();
 
