@@ -66,7 +66,11 @@ namespace NeoConnect
                 var smtpPassword = _config["Smtp:Password"];
                 var smtpToAddress = _config["Smtp:ToAddress"];
 
-                if (string.IsNullOrEmpty(smtpHost) || string.IsNullOrEmpty(smtpHost) || string.IsNullOrEmpty(smtpHost) || string.IsNullOrEmpty(smtpHost) || string.IsNullOrEmpty(smtpHost))
+                if (string.IsNullOrEmpty(smtpHost)
+                    || string.IsNullOrEmpty(smtpPort)
+                    || string.IsNullOrEmpty(smtpUsername)
+                    || string.IsNullOrEmpty(smtpPassword)
+                    || string.IsNullOrEmpty(smtpToAddress))
                 {
                     _logger.LogWarning($"Unable to send email '{subject}' as email config is incomplete.");
                     return false;
