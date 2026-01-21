@@ -4,14 +4,16 @@ using System.Text.Json;
 
 namespace NeoConnect
 {
-    public class NeoHubService : INeoHubService
+    public class NeoHubService : INeoHubService, IDisposable
     {
         private readonly ILogger<NeoHubService> _logger;
         private readonly IConfiguration _config;
         private readonly Uri _uri;
         private readonly string _key;
+        private int _inc = 0;
 
         private ClientWebSocketWrapper _ws;
+        private bool disposedValue;
 
         public NeoHubService()
         {                
@@ -61,14 +63,13 @@ namespace NeoConnect
                     _logger.LogWarning("Incomplete WebSocket disconnection: " + ex.Message);
                 }
             }
-            _ws.Dispose();
         }
 
         public async Task<List<NeoDevice>> GetDevices(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Fetching Devices.");
 
-            await SendMessage("GET_LIVE_DATA", "0", 1, cancellationToken);
+            await SendMessage("GET_LIVE_DATA", "0", _inc++, cancellationToken);
 
             var result = await ReceiveMessage(cancellationToken);
             return JsonSerializer.Deserialize(result.ResponseJson, NeoConnectJsonContext.Default.NeoHubLiveData)?.Devices ?? throw new Exception($"Error parsing GET_LIVE_DATA json: {result.ResponseJson}");
@@ -76,7 +77,7 @@ namespace NeoConnect
 
         public async Task<Dictionary<string, EngineersData>> GetEngineersData(CancellationToken cancellationToken)
         {
-            await SendMessage("GET_ENGINEERS", "0", 3, cancellationToken);
+            await SendMessage("GET_ENGINEERS", "0", _inc++, cancellationToken);
 
             var result = await ReceiveMessage(cancellationToken);
             return JsonSerializer.Deserialize(result.ResponseJson, NeoConnectJsonContext.Default.DictionaryStringEngineersData) ?? throw new Exception($"Error parsing GET_ENGINEERS json: {result.ResponseJson}");
@@ -86,7 +87,7 @@ namespace NeoConnect
         {
             _logger.LogInformation("Fetching Profiles.");
 
-            await SendMessage("GET_PROFILES", "0", 2, cancellationToken);
+            await SendMessage("GET_PROFILES", "0", _inc++, cancellationToken);
 
             var result = await ReceiveMessage(cancellationToken);
 
@@ -96,7 +97,7 @@ namespace NeoConnect
 
         public async Task<Dictionary<string, int>> GetROCData(string[] devices, CancellationToken cancellationToken)
         {
-            await SendMessage("VIEW_ROC", $"[{string.Join(',', devices.Select(d => $"'{d}'"))}]", 5, cancellationToken);
+            await SendMessage("VIEW_ROC", $"[{string.Join(',', devices.Select(d => $"'{d}'"))}]", _inc++, cancellationToken);
 
             var result = await ReceiveMessage(cancellationToken);
             return JsonSerializer.Deserialize(result.ResponseJson, NeoConnectJsonContext.Default.DictionaryStringInt32) ?? throw new Exception($"Error parsing VIEW_ROC json: {result.ResponseJson}");
@@ -106,7 +107,7 @@ namespace NeoConnect
         {
             _logger.LogInformation($"Running recipe: {recipeName}.");
 
-            await SendMessage("RUN_RECIPE", $"['{recipeName}']", 4, cancellationToken);
+            await SendMessage("RUN_RECIPE", $"['{recipeName}']", _inc++, cancellationToken);
 
             await ReceiveMessage(cancellationToken);
         }
@@ -115,28 +116,45 @@ namespace NeoConnect
         {
             _logger.LogInformation($"Setting preheat duration for {zoneName} to {maxPreheatDuration} hours.");
 
-            await SendMessage("SET_PREHEAT", $"[{maxPreheatDuration}, '{zoneName}']", 5, cancellationToken);
+            await SendMessage("SET_PREHEAT", $"[{maxPreheatDuration}, '{zoneName}']", _inc++, cancellationToken);
 
             await ReceiveMessage(cancellationToken);
-
         }
 
-        public ComfortLevel? GetNextSwitchingInterval(ProfileSchedule schedule, DateTime? relativeTo)
+        public async Task Hold(string id, string[] devices, double temp, int hours, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation($"Holding {string.Join(',', devices)} at {temp}c for {hours} hours.");
+
+            await SendMessage("HOLD", $"[{{'temp': {temp}, 'hours': {hours}, 'minutes': 0, 'id': '{id}'}},[{string.Join(',', devices.Select(d => $"'{d}'"))}]]", _inc++, cancellationToken);
+
+            await ReceiveMessage(cancellationToken);
+        }
+
+        public async Task Boost(string[] devices, int hours, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation($"Boosting {string.Join(',', devices)} for {hours} hours.");
+
+            await SendMessage("BOOST_ON", $"[{{'hours': {hours}, 'minutes': 0 }},[{string.Join(',', devices.Select(d => $"'{d}'"))}]]", _inc++, cancellationToken);
+
+            await ReceiveMessage(cancellationToken);
+        }
+
+        public ComfortLevel? GetNextComfortLevel(ProfileSchedule schedule, DateTime? relativeTo)
         {
             var date = relativeTo ?? DateTime.Now;
             if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
             {
                 // Use weekend schedule
-                return GetNextSwitchingInterval(schedule.Weekends, TimeOnly.FromDateTime(date));
+                return GetNextComfortLevel(schedule.Weekends, TimeOnly.FromDateTime(date));
             }
             else
             {
                 // Use weekday schedule
-                return GetNextSwitchingInterval(schedule.Weekdays, TimeOnly.FromDateTime(date));
+                return GetNextComfortLevel(schedule.Weekdays, TimeOnly.FromDateTime(date));
             }
         }
 
-        private ComfortLevel? GetNextSwitchingInterval(ProfileScheduleGroup scheduleGroup, TimeOnly? relativeTo)
+        private ComfortLevel? GetNextComfortLevel(ProfileScheduleGroup scheduleGroup, TimeOnly? relativeTo)
         {
             return new ComfortLevel[] 
             { 
@@ -181,7 +199,7 @@ namespace NeoConnect
         }
 
         private async Task<NeoHubResponse> ReceiveMessage(CancellationToken cancellationToken)
-        {
+        {            
             var responseJson = await _ws.ReceiveAllAsync(cancellationToken);
 
             if (_logger.IsEnabled(LogLevel.Debug))
@@ -190,6 +208,25 @@ namespace NeoConnect
             }
 
             return JsonSerializer.Deserialize(responseJson, NeoConnectJsonContext.Default.NeoHubResponse) ?? throw new Exception($"Could not parse json: {responseJson}");
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _ws.Dispose();
+                }
+                
+                disposedValue = true;
+            }
+        }        
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

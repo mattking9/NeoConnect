@@ -30,6 +30,9 @@ namespace NeoConnect
 
     public class NeoDevice
     {
+        [JsonPropertyName("DEVICE_ID")]
+        public int DeviceId { get; set; }
+
         [JsonPropertyName("ACTIVE_PROFILE")]
         public int ActiveProfile { get; set; }
 
@@ -50,6 +53,15 @@ namespace NeoConnect
 
         [JsonPropertyName("STANDBY")]
         public bool IsStandby { get; set; }
+
+        [JsonPropertyName("HEAT_ON")]
+        public bool IsHeating { get; set; }
+
+        [JsonPropertyName("PREHEAT_ACTIVE")]
+        public bool IsPreheating { get; set; }
+
+        [JsonPropertyName("TIMER_ON")]
+        public bool TimerOn { get; set; }
     }
 
     public class Profile

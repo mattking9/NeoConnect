@@ -1,6 +1,6 @@
+using Moq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Moq;
 using System.Text.Json;
 
 namespace NeoConnect.UnitTests
@@ -90,7 +90,6 @@ namespace NeoConnect.UnitTests
 
             //assert
             websocketWrapperMock.Verify(w => w.CloseAsync(It.IsAny<CancellationToken>()), Times.Never);
-            websocketWrapperMock.Verify(w => w.Dispose(), Times.Once);
         }
 
         [Test]
@@ -108,7 +107,6 @@ namespace NeoConnect.UnitTests
 
             //assert
             websocketWrapperMock.Verify(w => w.CloseAsync(It.IsAny<CancellationToken>()), Times.Once);
-            websocketWrapperMock.Verify(w => w.Dispose(), Times.Once);
         }
 
         [Test]
@@ -124,7 +122,6 @@ namespace NeoConnect.UnitTests
 
             //assert
             websocketWrapperMock.Verify(w => w.CloseAsync(It.IsAny<CancellationToken>()), Times.Once);
-            websocketWrapperMock.Verify(w => w.Dispose(), Times.Once);
         }
 
         [Test]
@@ -488,7 +485,7 @@ namespace NeoConnect.UnitTests
             var service = new NeoHubService();
 
             // Act
-            var result = service.GetNextSwitchingInterval(schedule, DateTime.Parse(isoDateTime));
+            var result = service.GetNextComfortLevel(schedule, DateTime.Parse(isoDateTime));
 
             // Assert
             Assert.That(result, Is.Not.Null);
@@ -506,10 +503,84 @@ namespace NeoConnect.UnitTests
             var service = new NeoHubService();
 
             // Act
-            var result = service.GetNextSwitchingInterval(schedule, DateTime.Parse(isoDateTime));
+            var result = service.GetNextComfortLevel(schedule, DateTime.Parse(isoDateTime));
 
             // Assert
             Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        public async Task Hold_SendsCorrectCommandAndReceivesResponse()
+        {
+            // Arrange
+            var mockLogger = new Mock<ILogger<NeoHubService>>();
+            var mockWs = new Mock<ClientWebSocketWrapper>();
+            var token = new CancellationToken();
+
+            mockWs.Setup(w => w.State).Returns(System.Net.WebSockets.WebSocketState.Open);
+
+            // Setup ReceiveAllAsync to return a valid NeoHubResponse JSON
+            var response = new NeoHubResponse
+            {
+                CommandId = 1,
+                DeviceId = "0",
+                MessageType = "RESPONSE",
+                ResponseJson = "{}"
+            };
+            mockWs.Setup(w => w.ReceiveAllAsync(token)).ReturnsAsync(System.Text.Json.JsonSerializer.Serialize(response));
+
+            var service = new NeoHubService(mockLogger.Object, _configuration, mockWs.Object);
+
+            // Act
+            await service.Hold("hold-id", new[] { "Zone1", "Zone2" }, 21.5, 2, token);
+
+            // Assert
+            mockWs.Verify(w => w.SendAllAsync(It.Is<string>(msg =>
+                msg.Contains("'HOLD':") &&
+                msg.Contains("'id': 'hold-id'") &&
+                msg.Contains("'temp': 21.5") &&
+                msg.Contains("'hours': 2") &&
+                msg.Contains("'Zone1'") &&
+                msg.Contains("'Zone2'")
+            ), token), Times.Once);
+
+            mockWs.Verify(w => w.ReceiveAllAsync(token), Times.Once);
+        }
+
+        [Test]
+        public async Task Boost_SendsCorrectCommandAndReceivesResponse()
+        {
+            // Arrange
+            var mockLogger = new Mock<ILogger<NeoHubService>>();
+            var mockWs = new Mock<ClientWebSocketWrapper>();
+            var token = new CancellationToken();
+
+            mockWs.Setup(w => w.State).Returns(System.Net.WebSockets.WebSocketState.Open);
+
+            // Setup ReceiveAllAsync to return a valid NeoHubResponse JSON
+            var response = new NeoHubResponse
+            {
+                CommandId = 2,
+                DeviceId = "0",
+                MessageType = "RESPONSE",
+                ResponseJson = "{}"
+            };
+            mockWs.Setup(w => w.ReceiveAllAsync(token)).ReturnsAsync(System.Text.Json.JsonSerializer.Serialize(response));
+
+            var service = new NeoHubService(mockLogger.Object, _configuration, mockWs.Object);
+
+            // Act
+            await service.Boost(new[] { "ZoneA", "ZoneB" }, 1, token);
+
+            // Assert
+            mockWs.Verify(w => w.SendAllAsync(It.Is<string>(msg =>
+                msg.Contains("'BOOST_ON':") &&
+                msg.Contains("'hours': 1") &&
+                msg.Contains("'ZoneA'") &&
+                msg.Contains("'ZoneB'")
+            ), token), Times.Once);
+
+            mockWs.Verify(w => w.ReceiveAllAsync(token), Times.Once);
         }
     }
 }

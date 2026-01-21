@@ -3,7 +3,8 @@ namespace NeoConnect
 {
     public interface IEmailService
     {
-        Task SendErrorEmail(Exception error, CancellationToken stoppingToken);
-        Task SendSummaryEmail(List<string> deviceStatements, CancellationToken stoppingToken);
+        Task<bool> SendErrorEmail(Exception error, CancellationToken stoppingToken);
+        Task<bool> SendInfoEmail(IEnumerable<string> items, CancellationToken stoppingToken);
+        Task<bool> SendInfoEmail(string info, CancellationToken stoppingToken);
     }
 }
