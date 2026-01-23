@@ -66,25 +66,33 @@ a, .btn-link {
 /* Heating Table */
 
 #heating-table {
-    /*width: 100%;*/
+    overflow-x: scroll;
+    overflow-y: visible;    
+}
+
+@media (min-width: 641px) {
+    #heating-table {
+        width: calc(100% - 300px);
+        overflow-x: visible;
+        overflow-y: visible;
+    }
 }
 
     #heating-table th, td {
+        margin: 0;
         text-align: left;
-        font-size: 8pt;
-        padding: 0;
+        white-space: nowrap;
     }
 
     #heating-table td {
         /*border: 1px solid #ddd;*/
     }
 
-    #heating-table th {
-        overflow: visible;
-    }
-
     #heating-table .room {
-        /*width: 40px;*/
+        position: absolute;
+        width: 5em;
+        left: auto;
+        top: auto;
     }
 
     #heating-table .heat.off {
@@ -99,10 +107,10 @@ a, .btn-link {
         background-color: #f44336;
     }
 
-#live-data .on {
-    color: #f44336;
-}
+    #live-data .on {
+        color: #f44336;
+    }
 
-#live-data .pre {
-    color: #ffeb3b;
-}
+    #live-data .pre {
+        color: #ffeb3b;
+    }
