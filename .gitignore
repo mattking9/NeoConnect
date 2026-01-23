@@ -362,3 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /NeoConnect/docker-compose.yml
+/NeoConnect/.vscode
+/NeoConnect/appsettings.Development.json

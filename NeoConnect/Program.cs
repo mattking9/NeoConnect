@@ -1,87 +1,72 @@
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using NeoConnect;
 using NeoConnect.DataAccess;
-using System.Diagnostics;
-using System.Net;
+using NeoConnect.Data;
 
-namespace NeoConnect
-{
-    public class Program
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddLogging(logging =>
+    logging.AddSimpleConsole(options =>
     {
-        public static void Main(string[] args)
-        {
-            Console.WriteLine(@" _   _             ____                            _   ");
-            Console.WriteLine(@"| \ | | ___  ___  / ___|___  _ __  _ __   ___  ___| |_ ");
-            Console.WriteLine(@"|  \| |/ _ \/ _ \| |   / _ \| '_ \| '_ \ / _ \/ __| __|");
-            Console.WriteLine(@"| |\  |  __/ (_) | |__| (_) | | | | | | |  __/ (__| |_ ");
-            Console.WriteLine(@"|_| \_|\___|\___/ \____\___/|_| |_|_| |_|\___|\___|\__|");
-            Console.WriteLine("");
-            
-            var builder = Host.CreateApplicationBuilder(args);
+        options.SingleLine = true;
+        options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
+    })
+);
 
-            builder.Services.AddLogging(logging =>
-                logging.AddSimpleConsole(options =>
-                {
-                    options.SingleLine = true;
-                    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
-                })
-            );
+builder.Services.AddHttpClient();
 
-            builder.Services.AddHttpClient();
 
-            builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
 
-            builder.Services.AddSingleton<DeviceRepository>();
-            builder.Services.AddSingleton<IReportDataService, ReportDataService>();
-            builder.Services.AddSingleton<IEmailService, EmailService>();
 
-            builder.Services.AddScoped<IWeatherService, WeatherService>();
-            builder.Services.AddScoped<IHeatingService, HeatingService>();
-            builder.Services.AddScoped<INeoHubService, NeoHubService>();
-            
-            builder.Services.AddScoped<ClientWebSocketWrapper>();
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
-            builder.Services.AddSingleton<BathroomBoostAction>();
-            builder.Services.AddSingleton<GlobalHoldAction>();
-            builder.Services.AddSingleton<ReportDataCollectionAction>();            
+builder.Services.AddSingleton<DeviceRepository>();
 
-            builder.Services.AddHostedService<ScheduledWorker<BathroomBoostAction>>();
-            builder.Services.AddHostedService<ScheduledWorker<GlobalHoldAction>>();
-            builder.Services.AddHostedService<ScheduledWorker<ReportDataCollectionAction>>();            
+builder.Services.AddSingleton<IReportDataService, ReportDataService>();
+builder.Services.AddSingleton<IEmailService, EmailService>();
+builder.Services.AddScoped<IWeatherService, WeatherService>();
+builder.Services.AddScoped<IHeatingService, HeatingService>();
+builder.Services.AddScoped<INeoHubService, NeoHubService>();
 
-            var host = builder.Build();
+builder.Services.AddScoped<ClientWebSocketWrapper>();
 
-#if DEBUG     
-            using var scope = host.Services.CreateScope();
-            string input = null;
-            while (input != "s") 
-            {
-                IScheduledAction action = null;
-                Console.WriteLine("Type 's' to run to schedule or enter a number to run one of the following actions:");
-                Console.WriteLine("(1) BoostAction");
-                Console.WriteLine("(2) HoldAction");
-                Console.WriteLine("(3) ReportDataCollectionAction");                
-                input = Console.ReadLine();
-                switch (input)
-                {
-                    case "1":
-                        action = scope.ServiceProvider.GetRequiredService<BathroomBoostAction>();
-                        break;
-                    case "2":
-                        action = scope.ServiceProvider.GetRequiredService<GlobalHoldAction>();
-                        break;
-                    case "3":
-                        action = scope.ServiceProvider.GetRequiredService<ReportDataCollectionAction>();
-                        break;                    
-                    default:                        
-                        break;
-                }
-                
-                action?.Action(default).GetAwaiter().GetResult();
+builder.Services.AddSingleton<BathroomBoostAction>();
+builder.Services.AddSingleton<GlobalHoldAction>();
+builder.Services.AddSingleton<ReportDataCollectionAction>();
 
-                Console.WriteLine("");
-            }
-#endif
-            host.Run();
+builder.Services.AddHostedService<ScheduledWorker<BathroomBoostAction>>();
+builder.Services.AddHostedService<ScheduledWorker<GlobalHoldAction>>();
+builder.Services.AddHostedService<ScheduledWorker<ReportDataCollectionAction>>();
 
-        }
-    }
+
+builder.Services.AddScoped<ReportDataController>();
+
+builder.Services.AddSingleton<WeatherForecastService>();
+
+
+
+
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
 }
+
+app.UseHttpsRedirection();
+
+app.UseStaticFiles();
+
+app.UseRouting();
+
+app.MapBlazorHub();
+app.MapFallbackToPage("/_Host");
+
+app.Run();

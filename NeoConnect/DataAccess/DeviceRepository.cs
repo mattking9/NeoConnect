@@ -4,15 +4,17 @@ using Microsoft.Data.Sqlite;
 namespace NeoConnect.DataAccess
 {
     public class DeviceRepository
-    {        
-        private const string _connectionString = "Data Source=neoconnect.db";        
+    {
+        private const string _connectionString = "Data Source=neoconnect.db";
 
         //todo: get data per day
-        public List<DeviceState> GetDeviceData()
+        public async Task<IEnumerable<DeviceState>> GetDeviceData(DateTime dateToDisplay)
         {
             using (var connection = new SqliteConnection(_connectionString))
             {
-                return connection.Query<DeviceState>("SELECT * FROM DeviceState").ToList();
+                return await connection.QueryAsync<DeviceState>("SELECT * FROM DeviceState " +
+                                                            $"WHERE DATE(timestamp) >= DATE('{dateToDisplay.ToString("yyyy-MM-dd")}') " +
+                                                            $"AND DATE(timestamp) < DATE('{dateToDisplay.ToString("yyyy-MM-dd")}', '+1 day')");
             }
         }
 
