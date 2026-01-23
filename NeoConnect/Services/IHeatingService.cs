@@ -1,4 +1,5 @@
 ﻿
+
 namespace NeoConnect
 {
     public interface IHeatingService
@@ -8,5 +9,6 @@ namespace NeoConnect
         Task ReduceSetTempWhenExternalTempIsWarm(ForecastDay forecastToday, CancellationToken stoppingToken);
         Task BoostTowelRailWhenBathroomIsCold(CancellationToken stoppingToken);
         Task LogDeviceStatuses(CancellationToken stoppingToken);
+        Task<List<NeoDevice>> GetDevices(CancellationToken stoppingToken);
     }
 }

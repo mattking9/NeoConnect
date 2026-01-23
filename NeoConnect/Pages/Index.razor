@@ -5,7 +5,9 @@
 @using NeoConnect.Data
 @inject ReportDataController ReportDataController
 
-<h1>Home</h1>
+<h1>Summary</h1>
+
+@* <button class="btn btn-primary">Get Live Data</button> *@
 
 
 @if (grid == null || headings == null)
@@ -14,6 +16,12 @@
 }
 else
 {
+
+    
+    <h2><button class="btn btn-primary" @onclick="DecrDate"> - </button>
+        @dateToDisplay.ToLongDateString()
+        <button class="btn btn-primary" @onclick="IncrDate"> + </button></h2>
+    
     <table id="heating-table" class="table">
         <tbody>
             @for (var i = 0; i < grid.GetLength(0); i++)
@@ -46,7 +54,26 @@ else
     protected override async Task OnInitializedAsync()
     {
         dateToDisplay = DateTime.Today;
+        await LoadData();
+    }
 
+    protected async Task IncrDate()
+    {
+        if (dateToDisplay != DateTime.Today)
+        {
+            dateToDisplay = dateToDisplay.AddDays(1);
+            await LoadData();
+        }
+    }
+
+    protected async Task DecrDate()
+    {
+        dateToDisplay = dateToDisplay.AddDays(-1);
+        await LoadData();
+    }
+
+    protected async Task LoadData()
+    {
         var devices = await ReportDataController.GetDeviceData(dateToDisplay);
 
         // build the grid
@@ -61,13 +88,13 @@ else
             foreach (var val in device.OrderBy(d => d.Time))
             {
                 //pad
-                while (j-1 < val.Slice)
+                while (j - 1 < val.Slice)
                 {
                     grid[i, j] = "-1";
                     j++;
                 }
 
-                grid[i, j] = val.State.ToString();  
+                grid[i, j] = val.State.ToString();
                 j++;
             }
 

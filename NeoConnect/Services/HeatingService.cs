@@ -28,6 +28,16 @@ namespace NeoConnect
         }
 
         /// <summary>
+        /// Gets live device data from the NeoHub
+        /// </summary>
+        /// <param name="stoppingToken">A <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
+        /// <returns></returns>
+        public async Task<List<NeoDevice>> GetDevices(CancellationToken stoppingToken)
+        {
+            return await _neoHub.GetDevices(stoppingToken);
+        }
+
+        /// <summary>
         /// Boosts the towel rail in the bathroom for one hour if the bathroom temperature is at least one degree below
         /// the set temperature.
         /// </summary>

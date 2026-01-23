@@ -1,37 +1,33 @@
 ﻿@page "/fetchdata"
 
-<PageTitle>Weather forecast</PageTitle>
+<PageTitle>Live Data</PageTitle>
 
 @using NeoConnect.Data
-@inject WeatherForecastService ForecastService
+@inject IHeatingService HeatingService
 
-<h1>Weather forecast</h1>
+<h1>Live Data</h1>
 
-<p>This component demonstrates fetching data from a service.</p>
-
-@if (forecasts == null)
+@if (devices == null)
 {
     <p><em>Loading...</em></p>
 }
 else
 {
-    <table class="table">
+    <table id="live-data" class="table">
         <thead>
             <tr>
-                <th>Date</th>
-                <th>Temp. (C)</th>
-                <th>Temp. (F)</th>
-                <th>Summary</th>
+                <th>Name</th>
+                <th>Actual Temp</th>
+                <th>Set Temp</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var forecast in forecasts)
+            @foreach (var device in devices)
             {
-                <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.TemperatureF</td>
-                    <td>@forecast.Summary</td>
+                <tr class="@(device.IsHeating ? "on" : device.IsPreheating ? "pre" : "")">
+                    <th>@device.ZoneName</th>
+                    <td>@device.ActualTemp</td>
+                    <td>@device.SetTemp</td>
                 </tr>
             }
         </tbody>
@@ -39,10 +35,13 @@ else
 }
 
 @code {
-    private WeatherForecast[]? forecasts;
+    private List<NeoDevice>? devices;
 
     protected override async Task OnInitializedAsync()
     {
-        forecasts = await ForecastService.GetForecastAsync(DateTime.Now);
+        var stoppingToken = CancellationToken.None;
+        await HeatingService.Init(stoppingToken);
+        devices = await HeatingService.GetDevices(stoppingToken);
+        await HeatingService.Cleanup(stoppingToken);
     }
 }
