@@ -1,8 +1,5 @@
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using NeoConnect;
 using NeoConnect.DataAccess;
-using NeoConnect.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,15 +37,6 @@ builder.Services.AddSingleton<ReportDataCollectionAction>();
 builder.Services.AddHostedService<ScheduledWorker<BathroomBoostAction>>();
 builder.Services.AddHostedService<ScheduledWorker<GlobalHoldAction>>();
 builder.Services.AddHostedService<ScheduledWorker<ReportDataCollectionAction>>();
-
-
-builder.Services.AddScoped<ReportDataController>();
-
-builder.Services.AddSingleton<WeatherForecastService>();
-
-
-
-
 
 var app = builder.Build();
 

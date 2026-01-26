@@ -2,8 +2,8 @@
 
 <PageTitle>Index</PageTitle>
 
-@using NeoConnect.Data
-@inject IHeatingService HeatingService
+@using NeoConnect
+@inject IHeatingService _heatingService
 
 @if (devices == null)
 {
@@ -38,9 +38,9 @@ else
     protected override async Task OnInitializedAsync()
     {
         var stoppingToken = CancellationToken.None;
-        await HeatingService.Init(stoppingToken);
-        devices = await HeatingService.GetDevices(stoppingToken);
-        await HeatingService.Cleanup(stoppingToken);
+        await _heatingService.Init(stoppingToken);
+        devices = await _heatingService.GetDevices(stoppingToken);
+        await _heatingService.Cleanup(stoppingToken);
     }
 }
 

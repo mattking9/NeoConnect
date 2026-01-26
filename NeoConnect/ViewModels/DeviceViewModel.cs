@@ -1,4 +1,4 @@
-namespace NeoConnect.Data
+namespace NeoConnect.ViewModels
 {
     public class DeviceViewModel
     {

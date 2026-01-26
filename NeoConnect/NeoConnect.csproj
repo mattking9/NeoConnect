@@ -18,8 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="neoconnect.db">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <None Update="data\neoconnect.db">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

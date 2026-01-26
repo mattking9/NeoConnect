@@ -1,9 +1,10 @@
-﻿@page "/fetchdata"
+﻿@page "/history"
 
-<PageTitle>Heating Report</PageTitle>
+<PageTitle>History</PageTitle>
 
-@using NeoConnect.Data
-@inject ReportDataController ReportDataController
+@using NeoConnect
+@using NeoConnect.ViewModels
+@inject IReportDataService _reportDataService
 
 
 @if (grid == null || headings == null)
@@ -13,36 +14,38 @@
 else
 {
 
-
-    <h2>
-        <button class="btn btn-primary" @onclick="DecrDate"> - </button>
-        @dateToDisplay.ToString("dd MMM yyyy")
-        <button class="btn btn-primary" @onclick="IncrDate"> + </button>
-    </h2>
-
-    <div id="heating-table">
-        <table class="table">
-            <tbody>
-                @for (var i = 0; i < grid.GetLength(0); i++)
-                {
+    <div>
+        <p style="text-align:center">
+            <h2>
+                <button class="btn btn-primary" @onclick="DecrDate"> &lt; </button>
+                &nbsp; @dateToDisplay.ToString("dd MMM yyyy") &nbsp;
+                <button class="btn btn-primary" @onclick="IncrDate"> &gt; </button>
+            </h2>
+        </p>
+        <div id="heating-table">
+            <table class="table">
+                <tbody>
+                    @for (var i = 0; i < grid.GetLength(0); i++)
+                    {
+                        <tr>
+                            <th class="room">@grid[i, 0]</th>
+                            @for (var j = 1; j < grid.GetLength(1); j++)
+                            {
+                                <td class="heat @GetStatus(@grid[i, j])">&nbsp;</td>
+                            }
+                        </tr>
+                    }
                     <tr>
-                        <th class="room">@grid[i, 0]</th>
-                        @for (var j = 1; j < grid.GetLength(1); j++)
+                        <th></th>
+                        @for (var i = 0; i < headings.Length; i++)
                         {
-                            <td class="heat @GetStatus(@grid[i, j])">&nbsp;</td>
+
+                            <th colspan="4">@headings[i]</th>
                         }
                     </tr>
-                }
-                <tr>
-                    <th></th>
-                    @for (var i = 0; i < headings.Length; i++)
-                    {
-
-                        <th colspan="4">@headings[i]</th>
-                    }
-                </tr>
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
 }
 
@@ -74,7 +77,15 @@ else
 
     protected async Task LoadData()
     {
-        var devices = await ReportDataController.GetDeviceData(dateToDisplay);
+        // fetch the data
+        var devices = (await _reportDataService.GetDeviceData(dateToDisplay)).Select(d => new DeviceViewModel()
+        {
+            DeviceId = d.DeviceId,
+            State = d.PreheatActive ? 2 : d.HeatOn ? 1 : 0,
+            Time = d.Timestamp,
+            Slice = GetIndex(d.Timestamp)
+        }).GroupBy(d => d.DeviceId);
+    
 
         // build the grid
         grid = new string[devices.Count(), 97];
@@ -114,6 +125,11 @@ else
             headings[k] = times.ToString("HH:mm");
             times = times.AddHours(1);
         }
+    }
+
+    private int GetIndex(DateTime timestamp)
+    {
+        return (timestamp.Hour * 4) + (timestamp.Minute < 15 ? 0 : timestamp.Minute < 30 ? 1 : timestamp.Minute < 45 ? 2 : 3);
     }
 
     private string GetDeviceName(int id)

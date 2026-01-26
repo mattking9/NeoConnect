@@ -1,4 +1,5 @@
 ﻿using NeoConnect.DataAccess;
+using NeoConnect.ViewModels;
 
 namespace NeoConnect
 {
@@ -30,6 +31,11 @@ namespace NeoConnect
             });            
 
             _deviceRepository.AddDeviceData(deviceStates);
+        }
+
+        public async Task<IEnumerable<DeviceState>> GetDeviceData(DateTime dateToDisplay)
+        {
+            return await _deviceRepository.GetDeviceData(dateToDisplay);            
         }
     }
 }
