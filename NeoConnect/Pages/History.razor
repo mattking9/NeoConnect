@@ -5,6 +5,7 @@
 @using NeoConnect
 @using NeoConnect.ViewModels
 @inject IReportDataService _reportDataService
+@inject IHeatingService _heatingService
 
 
 @if (grid == null || headings == null)
@@ -17,9 +18,9 @@ else
     <div>
         <p style="text-align:center">
             <h2>
-                <button class="btn btn-primary" @onclick="DecrDate"> &lt; </button>
+                <button class="btn btn-light" @onclick="DecrDate"> &lt; </button>
                 &nbsp; @dateToDisplay.ToString("dd MMM yyyy") &nbsp;
-                <button class="btn btn-primary" @onclick="IncrDate"> &gt; </button>
+                <button class="btn btn-light" @onclick="IncrDate"> &gt; </button>
             </h2>
         </p>
         <div id="heating-table">
@@ -36,7 +37,7 @@ else
                         </tr>
                     }
                     <tr>
-                        <th></th>
+                        <th class="room">&nbsp;</th>
                         @for (var i = 0; i < headings.Length; i++)
                         {
 
@@ -48,7 +49,7 @@ else
         </div>
 
         <div>
-            <button class="btn btn-primary" @onclick="Export">Export </button>
+            <button class="btn btn-secondary" @onclick="Export">Export </button>
             
             @if(export != null)
             {
@@ -115,7 +116,7 @@ else
             Time = d.Timestamp,
             Slice = GetIndex(d.Timestamp)
         }).GroupBy(d => d.DeviceId);
-    
+
 
         // build the grid
         grid = new string[devices.Count(), 97];
@@ -164,26 +165,7 @@ else
 
     private string GetDeviceName(int id)
     {
-        switch (id)
-        {
-            case 1: return "Study";
-            case 2: return "Hall";
-            case 3: return "Kitchen";
-            case 4: return "Hot Water";
-            case 5: return "WW";
-            case 6: return "Child's Rm";
-            case 7: return "Guest Rm";
-            case 8: return "Master Rm";
-            case 9: return "Living Rm";
-            case 10: return "Landing";
-            case 11: return "Towel Rail";
-            case 12: return "Bathroom";
-            case 13: return "Utility";
-            case 14: return "Shower";
-            case 15: return "Ensuite";
-            case 16: return "Loft";
-            default: return "(unknown)";
-        }
+        return _heatingService.GetDeviceName(id, CancellationToken.None);
     }
 
     protected string GetStatus(string statusCode)

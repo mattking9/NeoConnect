@@ -8,6 +8,8 @@ namespace NeoConnect
         private readonly INeoHubService _neoHub;
         private readonly IEmailService _emailService;
         private readonly IReportDataService _reportDataService;
+        
+        private Dictionary<int, string> _deviceNameCache = new Dictionary<int, string>();
 
         public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IEmailService emailService, IReportDataService reportDataService)
         {
@@ -34,7 +36,25 @@ namespace NeoConnect
         /// <returns></returns>
         public async Task<List<NeoDevice>> GetDevices(CancellationToken stoppingToken)
         {
-            return await _neoHub.GetDevices(stoppingToken);
+            var devices = await _neoHub.GetDevices(stoppingToken);
+
+            _deviceNameCache = devices.Select(d => new KeyValuePair<int, string>(d.DeviceId, d.ZoneName)).ToDictionary<int, string>();
+
+            return devices;
+        }
+
+        /// <summary>
+        /// Gets a device name from its id
+        /// </summary>
+        /// <returns></returns>
+        public string GetDeviceName(int deviceId, CancellationToken stoppingToken)
+        {
+            if (_deviceNameCache.TryGetValue(deviceId, out string name) && name != null)
+            {
+                return name;
+            }
+
+            return "Device " + deviceId;
         }
 
         /// <summary>
