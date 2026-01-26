@@ -99,18 +99,18 @@ a, .btn-link {
         background-color: #f7f7f7
     }
 
-    #heating-table .heat.pre {
-        background-color: #ffeb3b;
-    }
+#heating-table .heat.pre {
+    background-color: #ff9c00;
+}
 
-    #heating-table .heat.on {
-        background-color: #f44336;
-    }
+#heating-table .heat.on {
+    background-color: #e10202;
+}
 
     #live-data .on {
-        color: #f44336;
+        color: #e10202;
     }
 
     #live-data .pre {
-        color: #ffeb3b;
+        color: #ff9c00;
     }
