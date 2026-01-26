@@ -46,10 +46,34 @@ else
                 </tbody>
             </table>
         </div>
+
+        <div>
+            <button class="btn btn-primary" @onclick="Export">Export </button>
+            
+            @if(export != null)
+            {
+                <table>
+                @foreach (var item in export.OrderBy(e => e.Timestamp))
+                {
+                    <tr>
+                            <td>@item.DeviceId,</td>
+                            <td>@item.ActualTemp,</td>
+                            <td>@item.SetTemp,</td>
+                            <td>@item.HeatOn,</td>
+                            <td>@item.PreheatActive,</td>
+                            <td>"@item.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")"</td>
+                        </tr>
+            
+            
+                }
+                </table>
+            }
+        </div>
     </div>
 }
 
 @code {
+    private List<NeoConnect.DataAccess.DeviceState> export;
     private string[,]? grid;
     private string[]? headings;
     private DateTime dateToDisplay;
@@ -73,6 +97,12 @@ else
     {
         dateToDisplay = dateToDisplay.AddDays(-1);
         await LoadData();
+    }
+
+    protected async Task Export()
+    {
+        export = (await _reportDataService.GetDeviceData(dateToDisplay)).ToList();
+        export.AddRange((await _reportDataService.GetDeviceData(dateToDisplay.AddDays(-1))).ToList());
     }
 
     protected async Task LoadData()
