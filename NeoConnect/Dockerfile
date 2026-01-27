@@ -13,7 +13,7 @@ RUN dotnet restore "./NeoConnect.csproj"
 COPY . .
 
 # This stage is used to publish the service project to be copied to the final stage
-RUN dotnet publish "./NeoConnect.csproj" -c $BUILD_CONFIGURATION -o /app/publish
+RUN dotnet publish "./NeoConnect.csproj" -c $BUILD_CONFIGURATION -o /app/publish -p:PublishTrimmed=true -p:TrimMode=partial -p:PublishSingleFile=true
 
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
@@ -21,4 +21,4 @@ FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 
-ENTRYPOINT ["dotnet", "./NeoConnect.dll"]
+ENTRYPOINT ["./NeoConnect"]

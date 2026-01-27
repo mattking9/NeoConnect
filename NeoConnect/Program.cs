@@ -26,7 +26,7 @@ builder.Services.AddSingleton<IDataService, DataService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddScoped<IWeatherService, WeatherService>();
 builder.Services.AddScoped<IHeatingService, HeatingService>();
-builder.Services.AddScoped<INeoHubService, NeoHubService>();
+builder.Services.AddSingleton<INeoHubService, NeoHubService>();
 
 builder.Services.AddScoped<ClientWebSocketWrapper>();
 

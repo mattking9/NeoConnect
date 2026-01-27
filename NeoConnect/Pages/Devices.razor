@@ -28,7 +28,7 @@ else
         <tbody>
             @foreach (var device in devices.Where(d => d.IsThermostat))
             {
-                <tr>
+                <tr @key="device.DeviceId">
                     <th>@device.ZoneName @if (device.IsStandby){<span style="font-weight:normal"> (Away)</span>}</th>
                     <td>@GetProfileName(device.ActiveProfile)</td>
                     <td>@device.ActualTemp°</td>

@@ -1,6 +1,7 @@
 ﻿@page "/schedules"
 @using NeoConnect
 @inject IHeatingService _heatingService
+@attribute [StreamRendering]
 
 <PageTitle>Schedules</PageTitle>
 
@@ -34,7 +35,7 @@ else
         <tbody>
             @foreach (var profile in schedules)
             {
-                <tr>
+                <tr @key="profile.Key">
                     <th width="12%">@profile.Key</th>
                     
                     @foreach (var cl in profile.Value)

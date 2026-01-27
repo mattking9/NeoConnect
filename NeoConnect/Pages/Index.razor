@@ -4,6 +4,7 @@
 
 @using NeoConnect
 @inject IHeatingService _heatingService
+@attribute [StreamRendering]
 
 @if (devices == null)
 {
@@ -15,7 +16,7 @@ else
         
             @foreach (var device in devices)
             {
-            <div class="col-6">
+            <div class="col-6" @key="device.DeviceId">
                 <div class="card text-center mt-3">
                     <div class="card-body">
                         <p class="card-title truncate">@device.ZoneName</p>

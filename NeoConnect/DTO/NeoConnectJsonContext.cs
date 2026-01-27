@@ -7,6 +7,9 @@ namespace NeoConnect
 {
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
     [JsonSerializable(typeof(DeviceState))]
+    [JsonSerializable(typeof(NeoDevice))]
+    [JsonSerializable(typeof(Profile))]
+    [JsonSerializable(typeof(EngineersData))]
     [JsonSerializable(typeof(WeatherResponse))]
     [JsonSerializable(typeof(NeoHubResponse))]
     [JsonSerializable(typeof(NeoHubLiveData))]
