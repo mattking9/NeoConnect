@@ -2,11 +2,11 @@
 @using NeoConnect
 @inject IHeatingService _heatingService
 
-<PageTitle>Profiles</PageTitle>
+<PageTitle>Schedules</PageTitle>
 
-<h1>Profiles</h1>
+<h1>Schedules</h1>
 
-@if (profiles == null)
+@if (schedules == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -32,7 +32,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var profile in profiles)
+            @foreach (var profile in schedules)
             {
                 <tr>
                     <th width="12%">@profile.Key</th>
@@ -49,13 +49,16 @@ else
 }
 
 @code {
-    private Dictionary<string, ComfortLevel[]>? profiles = new Dictionary<string, ComfortLevel[]>();
+
+    private Dictionary<string, ComfortLevel[]>? schedules;
 
     protected override async Task OnInitializedAsync()
     {
         await _heatingService.Init(CancellationToken.None);
         var profileData = await _heatingService.GetProfiles(CancellationToken.None);
         await _heatingService.Cleanup(CancellationToken.None);
+
+        schedules = new Dictionary<string, ComfortLevel[]>();
 
         foreach (var profile in profileData)
         {
@@ -69,7 +72,7 @@ else
             comfortLevels[6] = new ComfortLevel(profile.Value.Schedule.Weekends.Return);
             comfortLevels[7] = new ComfortLevel(profile.Value.Schedule.Weekends.Sleep);
 
-            profiles.Add(profile.Value.ProfileName, comfortLevels);
+            schedules.Add(profile.Value.ProfileName, comfortLevels);
         }
     }
 }

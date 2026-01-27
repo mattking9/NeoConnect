@@ -1,6 +1,7 @@
 ﻿@page "/devices"
 @using NeoConnect
-@inject INeoHubService neoHubService
+@inject INeoHubService _neoHubService
+@inject IDataService _dataService;
 @attribute [StreamRendering]
 
 <PageTitle>Devices</PageTitle>
@@ -28,7 +29,7 @@ else
             @foreach (var device in devices.Where(d => d.IsThermostat))
             {
                 <tr>
-                    <th>@device.ZoneName @(device.IsStandby ? "(Standby)" : "")</th>
+                    <th>@device.ZoneName @if (device.IsStandby){<span style="font-weight:normal"> (Away)</span>}</th>
                     <td>@GetProfileName(device.ActiveProfile)</td>
                     <td>@device.ActualTemp°</td>
                     <td>@device.SetTemp°</td>
@@ -41,19 +42,19 @@ else
 }
 
 @code {
-    private List<NeoDevice>? devices = new List<NeoDevice>();
-    private Dictionary<string, int> rocs = new Dictionary<string, int>();
-    private Dictionary<int, Profile> profiles = new Dictionary<int, Profile>();
-    private Dictionary<string, EngineersData> engineers = new Dictionary<string, EngineersData>();
+
+    private List<NeoDevice>? devices;
+    private Dictionary<string, int>? rocs;
+    private Dictionary<int, Profile>? profiles;
+    private Dictionary<string, EngineersData>? engineers;
 
     protected override async Task OnInitializedAsync()
     {
-        await neoHubService.Connect(CancellationToken.None);
-        devices = await neoHubService.GetDevices(CancellationToken.None);
-        profiles = await neoHubService.GetAllProfiles(CancellationToken.None);
-        rocs = await neoHubService.GetROCData(devices.Select(d => d.ZoneName).ToArray(), CancellationToken.None);
-        engineers = await neoHubService.GetEngineersData(CancellationToken.None);
-        await neoHubService.Disconnect(CancellationToken.None);        
+        await _neoHubService.Connect(CancellationToken.None);
+        devices = await _neoHubService.GetDevices(CancellationToken.None);        
+        rocs = await _neoHubService.GetROCData(devices.Select(d => d.ZoneName).ToArray(), CancellationToken.None);
+        engineers = await _neoHubService.GetEngineersData(CancellationToken.None);
+        await _neoHubService.Disconnect(CancellationToken.None);        
     }
 
     private string GetROC(string deviceName)
@@ -70,9 +71,6 @@ else
 
     private string GetProfileName(int profileId)
     {
-        Profile profile;
-        if (profiles.TryGetValue(profileId, out profile))
-            return profile.ProfileName;
-        return profileId.ToString();
+        return _dataService.GetProfileName(profileId);
     }
 }

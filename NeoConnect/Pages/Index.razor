@@ -5,7 +5,6 @@
 @using NeoConnect
 @inject IHeatingService _heatingService
 
-
 @if (devices == null)
 {
     <p><em>Loading...</em></p>
@@ -17,13 +16,13 @@ else
             @foreach (var device in devices)
             {
             <div class="col-6">
-                <div class="card text-center bg-light mt-3">
-                <div class="card-body">
-                    <p class="card-title">@device.ZoneName</p>
-                    <p class="card-text"><span class="@(device.IsHeating ? "on" : device.IsPreheating ? "pre" : "")" style="font-size:3em;">@device.ActualTemp°</span></p>
-                    <p class="card-subtitle mb-2 text-muted">@device.SetTemp°</p>
+                <div class="card text-center mt-3">
+                    <div class="card-body">
+                        <p class="card-title truncate">@device.ZoneName</p>
+                        <p class="card-text"><span class="@(device.IsHeating ? "on" : device.IsPreheating ? "pre" : "")" style="font-size:2em;">@device.ActualTemp°</span></p>
+                        <p class="card-subtitle mb-2 text-muted">@device.SetTemp°</p>
+                    </div>
                 </div>
-            </div>
             </div>
             }    
         

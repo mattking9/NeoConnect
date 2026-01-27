@@ -11,6 +11,5 @@ namespace NeoConnect
         Task LogDeviceStatuses(CancellationToken stoppingToken);
         Task<List<NeoDevice>> GetDevices(CancellationToken stoppingToken);
         Task<Dictionary<int, Profile>> GetProfiles(CancellationToken stoppingToken);
-        string GetDeviceName(int deviceId, CancellationToken stoppingToken);
     }
 }

@@ -4,7 +4,7 @@
 
 @using NeoConnect
 @using NeoConnect.ViewModels
-@inject IReportDataService _reportDataService
+@inject IDataService _dataService
 @inject IHeatingService _heatingService
 
 
@@ -74,7 +74,7 @@ else
 }
 
 @code {
-    private List<NeoConnect.DataAccess.DeviceState> export;
+    private List<NeoConnect.DataAccess.DeviceState>? export;
     private string[,]? grid;
     private string[]? headings;
     private DateTime dateToDisplay;
@@ -102,14 +102,14 @@ else
 
     protected async Task Export()
     {
-        export = (await _reportDataService.GetDeviceData(dateToDisplay)).ToList();
-        export.AddRange((await _reportDataService.GetDeviceData(dateToDisplay.AddDays(-1))).ToList());
+        export = (await _dataService.GetDeviceData(dateToDisplay)).ToList();
+        export.AddRange((await _dataService.GetDeviceData(dateToDisplay.AddDays(-1))).ToList());
     }
 
     protected async Task LoadData()
     {
         // fetch the data
-        var devices = (await _reportDataService.GetDeviceData(dateToDisplay)).Select(d => new DeviceViewModel()
+        var devices = (await _dataService.GetDeviceData(dateToDisplay)).Select(d => new DeviceViewModel()
         {
             DeviceId = d.DeviceId,
             State = d.PreheatActive ? 2 : d.HeatOn ? 1 : 0,
@@ -165,7 +165,7 @@ else
 
     private string GetDeviceName(int id)
     {
-        return _heatingService.GetDeviceName(id, CancellationToken.None);
+        return _dataService.GetDeviceName(id);
     }
 
     protected string GetStatus(string statusCode)

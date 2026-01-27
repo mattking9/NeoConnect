@@ -1,5 +1,7 @@
 
 
+using NeoConnect.Pages;
+
 namespace NeoConnect
 {
     public class HeatingService : IHeatingService
@@ -7,11 +9,9 @@ namespace NeoConnect
         private readonly ILogger<HeatingService> _logger;
         private readonly INeoHubService _neoHub;
         private readonly IEmailService _emailService;
-        private readonly IReportDataService _reportDataService;
-        
-        private Dictionary<int, string> _deviceNameCache = new Dictionary<int, string>();
+        private readonly IDataService _reportDataService;                
 
-        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IEmailService emailService, IReportDataService reportDataService)
+        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IEmailService emailService, IDataService reportDataService)
         {
             _logger = logger;
             _neoHub = neoHub;
@@ -38,24 +38,10 @@ namespace NeoConnect
         {
             var devices = await _neoHub.GetDevices(stoppingToken);
 
-            _deviceNameCache = devices.Select(d => new KeyValuePair<int, string>(d.DeviceId, d.ZoneName)).ToDictionary<int, string>();
+            _reportDataService.CacheDeviceNames(devices.Select(d => new KeyValuePair<int, string>(d.DeviceId, d.ZoneName)).ToDictionary());
 
             return devices;
-        }
-
-        /// <summary>
-        /// Gets a device name from its id
-        /// </summary>
-        /// <returns></returns>
-        public string GetDeviceName(int deviceId, CancellationToken stoppingToken)
-        {
-            if (_deviceNameCache.TryGetValue(deviceId, out string name) && name != null)
-            {
-                return name;
-            }
-
-            return "Device " + deviceId;
-        }
+        }        
 
         /// <summary>
         /// Gets profile data from the NeoHub
@@ -64,7 +50,11 @@ namespace NeoConnect
         /// <returns></returns>
         public async Task<Dictionary<int, Profile>> GetProfiles(CancellationToken stoppingToken)
         {
-            return await _neoHub.GetAllProfiles(stoppingToken);
+            var profiles = await _neoHub.GetAllProfiles(stoppingToken);
+
+            _reportDataService.CacheProfileNames(profiles.Select(p => new KeyValuePair<int, string>(p.Value.ProfileId, p.Value.ProfileName)).ToDictionary());
+
+            return profiles;
         }
 
         /// <summary>

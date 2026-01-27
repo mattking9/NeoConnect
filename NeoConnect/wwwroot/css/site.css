@@ -114,3 +114,13 @@ a, .btn-link {
     #live-data .pre {
         color: #ff9c00;
     }
+
+.truncate {    
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#components-reconnect-modal {
+    display: none !important;
+}
