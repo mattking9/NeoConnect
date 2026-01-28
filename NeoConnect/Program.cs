@@ -28,7 +28,7 @@ builder.Services.AddScoped<IWeatherService, WeatherService>();
 builder.Services.AddScoped<IHeatingService, HeatingService>();
 builder.Services.AddSingleton<INeoHubService, NeoHubService>();
 
-builder.Services.AddScoped<ClientWebSocketWrapper>();
+builder.Services.AddSingleton<ClientWebSocketWrapper>();
 
 builder.Services.AddSingleton<BathroomBoostAction>();
 builder.Services.AddSingleton<GlobalHoldAction>();

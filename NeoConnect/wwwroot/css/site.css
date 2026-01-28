@@ -72,9 +72,7 @@ a, .btn-link {
 
 @media (min-width: 641px) {
     #heating-table {
-        width: calc(100% - 300px);
-        overflow-x: visible;
-        overflow-y: visible;
+        width: calc(100vw - 300px);
     }
 }
 
@@ -105,6 +103,10 @@ a, .btn-link {
 
 #heating-table .heat.on {
     background-color: #e10202;
+}
+
+#heating-table .off.line {
+    border-left: 1px solid #dee2e6;
 }
 
     #live-data .on {
