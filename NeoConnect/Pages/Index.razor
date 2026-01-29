@@ -14,14 +14,18 @@ else
 {
     <div id="live-data" class="row">
         
-            @foreach (var device in devices)
+            @foreach (var device in devices.OrderByDescending(d => d.IsHeating || d.IsPreheating || d.TimerOn).OrderBy(d => !d.IsThermostat))
             {
             <div class="col-6" @key="device.DeviceId">
                 <div class="card text-center mt-3">
                     <div class="card-body">
                         <p class="card-title truncate">@device.ZoneName</p>
-                        <p class="card-text"><span class="@(device.IsHeating ? "on" : device.IsPreheating ? "pre" : "")" style="font-size:2em;">@device.ActualTemp°</span></p>
-                        <p class="card-subtitle mb-2 text-muted">@device.SetTemp°</p>
+                        <p class="card-text">
+                            <span class="@((device.IsHeating || device.TimerOn) ? "on" : device.IsPreheating ? "pre" : "")" style="font-size:2em;">
+                                @(device.IsThermostat? device.ActualTemp + "°": device.TimerOn ? "ON" : "OFF")
+                            </span>
+                        </p>
+                        <p class="card-subtitle mb-2 text-muted">@(device.IsThermostat ? device.SetTemp + "°" : "n/a")</p>
                     </div>
                 </div>
             </div>

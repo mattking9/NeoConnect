@@ -1,5 +1,6 @@
 ﻿@page "/automations"
 @using NeoConnect
+@inject IConfiguration _config
 @attribute [StreamRendering]
 
 <PageTitle>Automations</PageTitle>
@@ -7,20 +8,40 @@
 <h1>Automations</h1>
 
 <div class="row">
-    <div class="col-md-2 mt-4">
-        <button class="btn btn-primary mr-2"><i class="oi oi-arrow-circle-bottom">&nbsp;</i>Warm Weather Hold</button>
-     </div>
 
-     <div class="row">
-        <div class="col-md-2 mt-4">
-            <button class="btn btn-primary mr-2"><i class="oi oi-arrow-circle-top">&nbsp;</i>Cold Bathroom Boost</button>
+    <div class="col-md-4">
+        <div class="card text-center mt-3">
+            <div class="card-body">
+                <h5 class="card-title truncate">Warm Weather Hold</h5>
+                <p class="card-text">Holds all stats at 0.5° below their set temp if it is due to be warm and/or sunny in 1 hour's time.</p>
+                <p class="card-text">Schedule: @_config["HoldSchedule"] </p>
+                <button class="btn btn-primary mr-2"><i class="oi oi-flash">&nbsp;</i> Run Now</button>
+            </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-md-2 mt-4">
-            <button class="btn btn-primary mr-2"><i class="oi oi-data-transfer-upload">&nbsp;</i>Run Data Collection</button>
+
+    <div class="col-md-4">
+        <div class="card text-center mt-3">
+            <div class="card-body">
+                <h5 class="card-title truncate">Cold Bathroom Boost</h5>
+                <p class="card-text">Turns on the Bathroom Towel Radiator (in addition to UFH) if the Bathroom is 1° or more below it's target temp.</p>
+                <p class="card-text">Schedule: @_config["BoostSchedule"] </p>
+                <button class="btn btn-primary mr-2"><i class="oi oi-flash">&nbsp;</i> Run Now</button>
+            </div>
         </div>
     </div>
+
+    <div class="col-md-4">
+        <div class="card text-center mt-3">
+            <div class="card-body">
+                <h5 class="card-title truncate">Data Collection</h5>
+                <p class="card-text">Periodically gathers status data on all devices and saves them to the database for reporting purposes.</p>
+                <p class="card-text">Schedule: @_config["ReportDataCollectionSchedule"] </p>
+                <button class="btn btn-primary mr-2"><i class="oi oi-flash">&nbsp;</i> Run Now</button>
+            </div>
+        </div>
+    </div>
+    
 </div>
 
 @code {    
