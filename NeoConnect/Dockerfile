@@ -17,7 +17,6 @@ COPY . .
 RUN dotnet publish "./NeoConnect.csproj" \
     -c $BUILD_CONFIGURATION \
     -o /app/publish \
-    --no-restore \
     --self-contained false \
     /p:DebugType=None \
     /p:DebugSymbols=false \
@@ -35,8 +34,5 @@ RUN rm -rf \
     *.pdb \
     *.xml \
     runtimes/*/native/*.a \
-    wwwroot/css/open-iconic/FONT-LICENSE \
-    wwwroot/css/open-iconic/ICON-LICENSE \
-    wwwroot/css/open-iconic/README.md
 
 ENTRYPOINT ["dotnet", "./NeoConnect.dll"]
