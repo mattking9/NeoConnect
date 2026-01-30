@@ -1,7 +1,4 @@
 
-
-using NeoConnect.Pages;
-
 namespace NeoConnect
 {
     public class HeatingService : IHeatingService
@@ -9,14 +6,16 @@ namespace NeoConnect
         private readonly ILogger<HeatingService> _logger;
         private readonly INeoHubService _neoHub;
         private readonly IEmailService _emailService;
-        private readonly IDataService _reportDataService;                
+        private readonly IDataService _reportDataService;
+        private readonly InMemoryDataService _inMemoryDataService;
 
-        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IEmailService emailService, IDataService reportDataService)
+        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IEmailService emailService, IDataService reportDataService, InMemoryDataService inMemoryDataService)
         {
             _logger = logger;
             _neoHub = neoHub;
             _emailService = emailService;
             _reportDataService = reportDataService;
+            _inMemoryDataService = inMemoryDataService;
         }        
 
         /// <summary>
@@ -30,7 +29,7 @@ namespace NeoConnect
             {
                 var devices = await _neoHub.GetDevices(connection, stoppingToken);
 
-                _reportDataService.CacheDeviceNames(devices.ToDictionary(d => d.DeviceId, d => d.ZoneName));
+                _inMemoryDataService.CacheDeviceNames(devices.ToDictionary(d => d.DeviceId, d => d.ZoneName));
 
                 return devices;
             }
@@ -47,7 +46,7 @@ namespace NeoConnect
             {
                 var profiles = await _neoHub.GetAllProfiles(connection, stoppingToken);
 
-                _reportDataService.CacheProfileNames(profiles.Select(p => new KeyValuePair<int, string>(p.Value.ProfileId, p.Value.ProfileName)).ToDictionary());
+                _inMemoryDataService.CacheProfileNames(profiles.Select(p => new KeyValuePair<int, string>(p.Value.ProfileId, p.Value.ProfileName)).ToDictionary());
 
                 return profiles;
             }

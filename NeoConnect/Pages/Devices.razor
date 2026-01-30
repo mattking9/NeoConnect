@@ -2,6 +2,7 @@
 @using NeoConnect
 @inject INeoHubService _neoHubService
 @inject IDataService _dataService;
+@inject InMemoryDataService _inMemoryDataService;
 @attribute [StreamRendering]
 
 <PageTitle>Devices</PageTitle>
@@ -72,6 +73,6 @@ else
 
     private string GetProfileName(int profileId)
     {
-        return _dataService.GetProfileName(profileId);
+        return _inMemoryDataService.GetProfileName(profileId);
     }
 }

@@ -20,8 +20,9 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 builder.Services.AddSingleton<DeviceRepository>();
+builder.Services.AddSingleton<InMemoryDataService>();
 
-builder.Services.AddScoped<IDataService, DataService>();
+builder.Services.AddSingleton<IDataService, DataService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddScoped<IWeatherService, WeatherService>();
 builder.Services.AddScoped<IHeatingService, HeatingService>();

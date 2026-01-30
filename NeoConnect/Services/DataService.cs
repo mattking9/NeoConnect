@@ -2,12 +2,10 @@
 
 namespace NeoConnect
 {
+
     public class DataService : IDataService
     {
-        private readonly DeviceRepository _deviceRepository;
-
-        private Dictionary<int, string> _deviceNameCache = new Dictionary<int, string>();
-        private Dictionary<int, string> _profileNameCache = new Dictionary<int, string>();
+        private readonly DeviceRepository _deviceRepository;        
 
         public DataService(DeviceRepository deviceRepository)
         {
@@ -44,36 +42,6 @@ namespace NeoConnect
         public async Task<IEnumerable<DeviceState>> GetDeviceData(DateTime dateToDisplay)
         {
             return await _deviceRepository.GetDeviceData(dateToDisplay);            
-        }
-
-        public void CacheDeviceNames(Dictionary<int, string> deviceNames)
-        {
-            _deviceNameCache = deviceNames;
-        }
-
-        public string GetDeviceName(int deviceId)
-        {
-            if (_deviceNameCache.TryGetValue(deviceId, out string name) && name != null)
-            {
-                return name;
-            }
-
-            return "Device " + deviceId;
-        }
-
-        public void CacheProfileNames(Dictionary<int, string> profileNames)
-        {
-            _profileNameCache = profileNames;
-        }
-
-        public string GetProfileName(int profileId)
-        {
-            if (_profileNameCache.TryGetValue(profileId, out string name) && name != null)
-            {
-                return name;
-            }
-
-            return "Profile " + profileId;
-        }
+        }        
     }
 }

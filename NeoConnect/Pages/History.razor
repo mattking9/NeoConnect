@@ -5,7 +5,8 @@
 @using NeoConnect
 @using NeoConnect.ViewModels
 @inject IDataService _dataService
-@inject IHeatingService _heatingService
+@inject InMemoryDataService _inMemoryDataService
+
 @attribute [StreamRendering]
 
 
@@ -161,7 +162,7 @@ else
 
     private string GetDeviceName(int id)
     {
-        return _dataService.GetDeviceName(id);
+        return _inMemoryDataService.GetDeviceName(id);
     }
 
     protected string GetStatus(string statusCode)
