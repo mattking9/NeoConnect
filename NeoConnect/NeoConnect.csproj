@@ -4,25 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-	  
     <UserSecretsId>b6b49901-537f-42a9-a734-c70f0aab25e3</UserSecretsId>
-	  
-	<!-- Docker optimization properties -->
-	<InvariantGlobalization>false</InvariantGlobalization>
-	<PublishReadyToRun>true</PublishReadyToRun>
-	<PublishReadyToRunShowWarnings>true</PublishReadyToRunShowWarnings>
-
-	<!-- Remove debug info in Release -->
-	<DebugType Condition="'$(Configuration)' == 'Release'">None</DebugType>
-	<DebugSymbols Condition="'$(Configuration)' == 'Release'">false</DebugSymbols>
-
-	<!-- Optimize for size -->
-	<EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
-	<EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
-	<JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
-
-	<!-- Remove unnecessary satellite assemblies -->
-	<SatellitResourceLanguages>en</SatellitResourceLanguages>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
