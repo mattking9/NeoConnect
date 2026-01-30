@@ -18,7 +18,6 @@ RUN dotnet publish "./NeoConnect.csproj" \
     -c $BUILD_CONFIGURATION \
     -o /app/publish \
     --no-restore \
-    --runtime alpine-x64 \
     --self-contained false \
     /p:DebugType=None \
     /p:DebugSymbols=false \
