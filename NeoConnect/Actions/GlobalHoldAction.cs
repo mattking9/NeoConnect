@@ -29,12 +29,8 @@ namespace NeoConnect
                 var weatherService = scope.ServiceProvider.GetService<IWeatherService>();
 
                 var forecast = await weatherService.GetForecast(stoppingToken);
-
-                await heatingService.Init(stoppingToken);
-
+                
                 await heatingService.ReduceSetTempWhenExternalTempIsWarm(forecast.ForecastDay[0], stoppingToken);
-
-                await heatingService.Cleanup(stoppingToken);
             }
         }             
     }

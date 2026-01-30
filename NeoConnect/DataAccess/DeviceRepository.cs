@@ -23,9 +23,15 @@ namespace NeoConnect.DataAccess
             {
                 try
                 {
-                    return await connection.QueryAsync<DeviceState>("SELECT * FROM DeviceState " +
-                                                                $"WHERE DATE(timestamp) >= DATE('{dateToDisplay.ToString("yyyy-MM-dd")}') " +
-                                                                $"AND DATE(timestamp) < DATE('{dateToDisplay.ToString("yyyy-MM-dd")}', '+1 day')");
+                    const string sql = @"SELECT DeviceId, SetTemp, ActualTemp, HeatOn, PreheatActive, OutsideTemp, Timestamp 
+                                        FROM DeviceState 
+                                        WHERE Timestamp >= @StartDate AND Timestamp < @EndDate";
+
+                    return await connection.QueryAsync<DeviceState>(sql, new
+                    {
+                        StartDate = dateToDisplay.Date,
+                        EndDate = dateToDisplay.Date.AddDays(1)
+                    });
                 }
                 catch (Exception ex)
                 {

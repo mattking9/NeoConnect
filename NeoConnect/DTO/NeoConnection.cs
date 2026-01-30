@@ -1,29 +1,31 @@
 ﻿using System.Net.WebSockets;
 using System.Text;
-using System.Text.Json;
 
 namespace NeoConnect
 {
-    public class ClientWebSocketWrapper : IDisposable
+    public class NeoConnectionFactory : INeoConnectionFactory
     {        
-        private ClientWebSocket _ws;        
+        public INeoConnection Create()
+        {
+            return new NeoConnection();
+        }
+    }
 
-        public virtual WebSocketState State => _ws?.State ?? WebSocketState.None;
+    public class NeoConnection : IDisposable, INeoConnection
+    {
+        private ClientWebSocket _ws;
 
-        public virtual async Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
-        {            
+        public WebSocketState State => _ws?.State ?? WebSocketState.None;
+
+        public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
+        {
             _ws = new ClientWebSocket();
             _ws.Options.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
 
             await _ws.ConnectAsync(uri, cancellationToken);
         }
 
-        public virtual async Task CloseAsync(CancellationToken cancellationToken)
-        {            
-            _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client closed", cancellationToken);
-        }        
-
-        public virtual async Task SendAllAsync(string message, CancellationToken cancellationToken)
+        public async Task SendAllAsync(string message, CancellationToken cancellationToken)
         {
             var bytes = Encoding.UTF8.GetBytes(message);
             var segment = new ArraySegment<byte>(bytes);
@@ -31,7 +33,7 @@ namespace NeoConnect
             await _ws.SendAsync(segment, WebSocketMessageType.Text, true, cancellationToken);
         }
 
-        public virtual async Task<string> ReceiveAllAsync(CancellationToken cancellationToken)
+        public async Task<string> ReceiveAllAsync(CancellationToken cancellationToken)
         {
             var buffer = new byte[1024];
             var segment = new ArraySegment<byte>(buffer);
@@ -45,7 +47,6 @@ namespace NeoConnect
 
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
-                    await this.CloseAsync(cancellationToken);
                     break;
                 }
 
@@ -55,9 +56,9 @@ namespace NeoConnect
             }
 
             return responseJson.ToString();
-        }        
+        }
 
-        public virtual void Dispose()
+        public void Dispose()
         {
             if (_ws != null)
             {

@@ -104,45 +104,46 @@ else
     protected async Task LoadData()
     {
         // fetch the data
-        var devices = (await _dataService.GetDeviceData(dateToDisplay)).Select(d => new DeviceViewModel()
+        var data = await _dataService.GetDeviceData(dateToDisplay);
+
+        var devices = data.Select(d => new DeviceViewModel()
         {
             DeviceId = d.DeviceId,
             State = d.PreheatActive ? 2 : d.HeatOn ? 1 : 0,
             Time = d.Timestamp,
             Slice = GetIndex(d.Timestamp)
-        }).GroupBy(d => d.DeviceId);
+        }).GroupBy(d => d.DeviceId).ToArray();
 
 
         // build the grid
-        grid = new string[devices.Count(), 97];
+        int deviceCount = devices.Length;
+        grid = new string[deviceCount, 97];
         headings = new string[23];
-        int i = 0;
-        foreach (var device in devices)
+
+        for (int i = 0; i<deviceCount; i++)
         {
+            var device = devices[i];
             grid[i, 0] = GetDeviceName(device.Key);
 
             int j = 1;
-            foreach (var val in device.OrderBy(d => d.Time))
+            var deviceData = device.OrderBy(d => d.Time);
+
+            foreach (var val in deviceData)
             {
-                //pad
+                // Fill gaps
                 while (j - 1 < val.Slice)
                 {
-                    grid[i, j] = "-1";
-                    j++;
+                    grid[i, j++] = "-1";
                 }
 
-                grid[i, j] = val.State.ToString();
-                j++;
+                grid[i, j++] = val.State.ToString();
             }
 
-            //pad to end
+            // Fill remaining
             while (j <= 96)
             {
-                grid[i, j] = "-1";
-                j++;
+                grid[i, j++] = "-1";
             }
-
-            i++;
         }
 
         var times = dateToDisplay;

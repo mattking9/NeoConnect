@@ -50,11 +50,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await _neoHubService.Connect(CancellationToken.None);
-        devices = await _neoHubService.GetDevices(CancellationToken.None);        
-        rocs = await _neoHubService.GetROCData(devices.Select(d => d.ZoneName).ToArray(), CancellationToken.None);
-        engineers = await _neoHubService.GetEngineersData(CancellationToken.None);
-        await _neoHubService.Disconnect(CancellationToken.None);        
+        using(var neoConnection = await _neoHubService.CreateConnection(CancellationToken.None))
+        {
+            devices = await _neoHubService.GetDevices(neoConnection, CancellationToken.None);
+            rocs = await _neoHubService.GetROCData(neoConnection, devices.Select(d => d.ZoneName).ToArray(), CancellationToken.None);
+            engineers = await _neoHubService.GetEngineersData(neoConnection, CancellationToken.None);
+        }
     }
 
     private string GetROC(string deviceName)

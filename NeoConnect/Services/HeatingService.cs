@@ -17,17 +17,7 @@ namespace NeoConnect
             _neoHub = neoHub;
             _emailService = emailService;
             _reportDataService = reportDataService;
-        }
-
-        public async Task Init(CancellationToken stoppingToken)
-        {
-            await _neoHub.Connect(stoppingToken);
-        }
-
-        public async Task Cleanup(CancellationToken stoppingToken)
-        {
-            await _neoHub.Disconnect(stoppingToken);
-        }
+        }        
 
         /// <summary>
         /// Gets live device data from the NeoHub
@@ -36,11 +26,14 @@ namespace NeoConnect
         /// <returns></returns>
         public async Task<List<NeoDevice>> GetDevices(CancellationToken stoppingToken)
         {
-            var devices = await _neoHub.GetDevices(stoppingToken);
+            using (var connection = await _neoHub.CreateConnection(stoppingToken))
+            {
+                var devices = await _neoHub.GetDevices(connection, stoppingToken);
 
-            _reportDataService.CacheDeviceNames(devices.Select(d => new KeyValuePair<int, string>(d.DeviceId, d.ZoneName)).ToDictionary());
+                _reportDataService.CacheDeviceNames(devices.ToDictionary(d => d.DeviceId, d => d.ZoneName));
 
-            return devices;
+                return devices;
+            }
         }        
 
         /// <summary>
@@ -50,11 +43,14 @@ namespace NeoConnect
         /// <returns></returns>
         public async Task<Dictionary<int, Profile>> GetProfiles(CancellationToken stoppingToken)
         {
-            var profiles = await _neoHub.GetAllProfiles(stoppingToken);
+            using (var connection = await _neoHub.CreateConnection(stoppingToken))
+            {
+                var profiles = await _neoHub.GetAllProfiles(connection, stoppingToken);
 
-            _reportDataService.CacheProfileNames(profiles.Select(p => new KeyValuePair<int, string>(p.Value.ProfileId, p.Value.ProfileName)).ToDictionary());
+                _reportDataService.CacheProfileNames(profiles.Select(p => new KeyValuePair<int, string>(p.Value.ProfileId, p.Value.ProfileName)).ToDictionary());
 
-            return profiles;
+                return profiles;
+            }
         }
 
         /// <summary>
@@ -68,47 +64,50 @@ namespace NeoConnect
             const string BATHROOM = "Bathroom";
             const string TOWEL_RAIL = "Towel Rail";
 
-            var devices = await _neoHub.GetDevices(stoppingToken);
-            var stat = devices.FirstOrDefault(d => d.ZoneName == BATHROOM);
-            var timer = devices.FirstOrDefault(d => d.ZoneName == TOWEL_RAIL);
+            using (var connection = await _neoHub.CreateConnection(stoppingToken))
+            {
+                var devices = await _neoHub.GetDevices(connection, stoppingToken);
+                var stat = devices.FirstOrDefault(d => d.ZoneName == BATHROOM);
+                var timer = devices.FirstOrDefault(d => d.ZoneName == TOWEL_RAIL);
 
-            if (stat == null)
-            {
-                _logger.LogInformation($"Device named '{BATHROOM}' was not found.");
-                return;
-            }
+                if (stat == null)
+                {
+                    _logger.LogInformation($"Device named '{BATHROOM}' was not found.");
+                    return;
+                }
 
-            if (timer == null)
-            {
-                _logger.LogInformation($"Device named '{TOWEL_RAIL}' was not found.");
-                return;
-            }
+                if (timer == null)
+                {
+                    _logger.LogInformation($"Device named '{TOWEL_RAIL}' was not found.");
+                    return;
+                }
 
-            if (stat.IsOffline || stat.IsStandby || Convert.ToDouble(stat.SetTemp) <= 12)
-            {
-                _logger.LogInformation($"{BATHROOM} is in an inactive state.");
-                return;
-            }
+                if (stat.IsOffline || stat.IsStandby || Convert.ToDouble(stat.SetTemp) <= 12)
+                {
+                    _logger.LogInformation($"{BATHROOM} is in an inactive state.");
+                    return;
+                }
 
-            var profiles = await _neoHub.GetAllProfiles(stoppingToken);
-            var bathroomProfile = profiles[stat.ActiveProfile];
-            var nextComfortLevel = _neoHub.GetNextComfortLevel(bathroomProfile.Schedule, DateTime.Now);
-            if (nextComfortLevel == null)
-            {
-                _logger.LogInformation($"{BATHROOM} has no more comfort levels today.");
-                return;
-            }
+                var profiles = await _neoHub.GetAllProfiles(connection, stoppingToken);
+                var bathroomProfile = profiles[stat.ActiveProfile];
+                var nextComfortLevel = _neoHub.GetNextComfortLevel(bathroomProfile.Schedule, DateTime.Now);
+                if (nextComfortLevel == null)
+                {
+                    _logger.LogInformation($"{BATHROOM} has no more comfort levels today.");
+                    return;
+                }
 
-            //if actual temp is 1 degree less than set temp then run Boost on towel radiator for 1 hour
-            var temperatureDifference = Convert.ToDouble(nextComfortLevel.TargetTemp) - Convert.ToDouble(stat.ActualTemp);
-            if (Convert.ToDouble(nextComfortLevel.TargetTemp) - Convert.ToDouble(stat.ActualTemp) >= 1)
-            {
-                await _neoHub.Boost([timer.ZoneName], 1, stoppingToken);
-                await _emailService.SendInfoEmail($"Boosted {timer.ZoneName}", stoppingToken);
-            }
-            else
-            {
-                _logger.LogInformation($"Bathroom Boost not required this time. Bathroom is currently {System.Math.Abs(temperatureDifference)}c {(temperatureDifference < 0 ? "above" : "below")} target.");
+                //if actual temp is 1 degree less than set temp then run Boost on towel radiator for 1 hour
+                var temperatureDifference = Convert.ToDouble(nextComfortLevel.TargetTemp) - Convert.ToDouble(stat.ActualTemp);
+                if (Convert.ToDouble(nextComfortLevel.TargetTemp) - Convert.ToDouble(stat.ActualTemp) >= 1)
+                {
+                    await _neoHub.Boost(connection, [timer.ZoneName], 1, stoppingToken);
+                    await _emailService.SendInfoEmail($"Boosted {timer.ZoneName}", stoppingToken);
+                }
+                else
+                {
+                    _logger.LogInformation($"Bathroom Boost not required this time. Bathroom is currently {System.Math.Abs(temperatureDifference)}c {(temperatureDifference < 0 ? "above" : "below")} target.");
+                }
             }
         }
 
@@ -132,23 +131,29 @@ namespace NeoConnect
                 return;
             }
 
-            // fetch all the necessary data from the NeoHub
-            var devices = (await _neoHub.GetDevices(stoppingToken)).Where(d => d.IsThermostat && !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);
+            using (var connection = await _neoHub.CreateConnection(stoppingToken))
+            {
+                // fetch all the necessary data from the NeoHub
+                var devices = (await _neoHub.GetDevices(connection, stoppingToken)).Where(d => d.IsThermostat && !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);
 
-            var holdGroup = "ReduceWhenWarm";
-            foreach (var device in devices)
-            {                
-                await _neoHub.Hold(holdGroup, [device.ZoneName], Convert.ToDouble(device.SetTemp) - 0.5, 1, stoppingToken);
+                var holdGroup = "ReduceWhenWarm";
+                foreach (var device in devices)
+                {
+                    await _neoHub.Hold(connection, holdGroup, [device.ZoneName], Convert.ToDouble(device.SetTemp) - 0.5, 1, stoppingToken);
+                }
+                await _emailService.SendInfoEmail(devices.Select(d => $"Holding {d.ZoneName} down 0.5c for 1 hour"), stoppingToken);
             }
-            await _emailService.SendInfoEmail(devices.Select(d => $"Holding {d.ZoneName} down 0.5c for 1 hour"), stoppingToken);
         }
 
         public async Task LogDeviceStatuses(CancellationToken stoppingToken)
         {
-            var devices = (await _neoHub.GetDevices(stoppingToken)).Where(d => !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);            
+            using (var connection = await _neoHub.CreateConnection(stoppingToken))
+            {
+                var devices = (await _neoHub.GetDevices(connection, stoppingToken)).Where(d => !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);
 
-            _logger.LogInformation($"Writing device statuses to database.");
-            _reportDataService.AddDeviceData(devices, 0);
+                _logger.LogInformation($"Writing device statuses to database.");
+                _reportDataService.AddDeviceData(devices, 0);
+            }
         }
     }
 }

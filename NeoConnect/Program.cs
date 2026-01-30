@@ -13,7 +13,6 @@ builder.Services.AddLogging(logging =>
 
 builder.Services.AddHttpClient();
 
-
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
@@ -22,13 +21,12 @@ builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 builder.Services.AddSingleton<DeviceRepository>();
 
-builder.Services.AddSingleton<IDataService, DataService>();
+builder.Services.AddScoped<IDataService, DataService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddScoped<IWeatherService, WeatherService>();
 builder.Services.AddScoped<IHeatingService, HeatingService>();
 builder.Services.AddSingleton<INeoHubService, NeoHubService>();
-
-builder.Services.AddSingleton<ClientWebSocketWrapper>();
+builder.Services.AddSingleton<INeoConnectionFactory, NeoConnectionFactory>();
 
 builder.Services.AddSingleton<BathroomBoostAction>();
 builder.Services.AddSingleton<GlobalHoldAction>();

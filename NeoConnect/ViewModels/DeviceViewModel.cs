@@ -1,6 +1,6 @@
 namespace NeoConnect.ViewModels
 {
-    public class DeviceViewModel
+    public struct DeviceViewModel
     {
         public int DeviceId { get; set; }
 

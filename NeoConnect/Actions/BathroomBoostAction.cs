@@ -27,12 +27,7 @@ namespace NeoConnect
             using (var scope = _serviceScopeFactory.CreateScope())
             {
                 var heatingService = scope.ServiceProvider.GetService<IHeatingService>();
-
-                await heatingService.Init(stoppingToken);
-
                 await heatingService.BoostTowelRailWhenBathroomIsCold(stoppingToken);
-
-                await heatingService.Cleanup(stoppingToken);
             }
         }                
     }

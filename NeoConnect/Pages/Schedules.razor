@@ -54,10 +54,8 @@ else
     private Dictionary<string, ComfortLevel[]>? schedules;
 
     protected override async Task OnInitializedAsync()
-    {
-        await _heatingService.Init(CancellationToken.None);
+    {        
         var profileData = await _heatingService.GetProfiles(CancellationToken.None);
-        await _heatingService.Cleanup(CancellationToken.None);
 
         schedules = new Dictionary<string, ComfortLevel[]>();
 

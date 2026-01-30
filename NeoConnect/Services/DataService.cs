@@ -16,11 +16,17 @@ namespace NeoConnect
 
         public void AddDeviceData(IEnumerable<NeoDevice> devices, double outsideTemperature)
         {
-            var deviceStates = devices.Where(device => device.IsThermostat).Select(device =>
+            var deviceList = devices as IList<NeoDevice> ?? devices.ToList();
+            var deviceStates = new List<DeviceState>(capacity: deviceList.Count);
+
+            foreach (var device in deviceList)
             {
+                if (!device.IsThermostat) continue;
+
                 double setTemp = double.TryParse(device.SetTemp, out double st) ? st : 0.0;
                 double actualTemp = double.TryParse(device.ActualTemp, out double at) ? at : 0.0;
-                return new DeviceState
+
+                deviceStates.Add(new DeviceState
                 {
                     DeviceId = device.DeviceId,
                     SetTemp = setTemp,
@@ -28,9 +34,9 @@ namespace NeoConnect
                     HeatOn = device.IsHeating,
                     PreheatActive = device.IsPreheating,
                     OutsideTemp = outsideTemperature,
-                    Timestamp = DateTime.Now
-                };
-            });            
+                    Timestamp = DateTime.UtcNow // Use UTC for consistency
+                });
+            }
 
             _deviceRepository.AddDeviceData(deviceStates);
         }
