@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedules API Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+            button:hover {
+                background-color: #0056b3;
+            }
+
+            button:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
+
+        .schedule-container {
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+            .schedule-container h2 {
+                margin-top: 0;
+                color: #007bff;
+                border-bottom: 2px solid #007bff;
+                padding-bottom: 10px;
+            }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #6c757d;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+
+        .temp {
+            font-weight: bold;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <h1>Schedules API Demo</h1>
+    <p>Endpoint: <code>GET https://localhost:7024/Schedules</code></p>
+
+    <button id="loadBtn" onclick="loadSchedules()">Load Schedules</button>
+
+    <div id="status"></div>
+    <div id="schedulesContainer"></div>
+
+    <script>async function loadSchedules() {
+            const statusDiv = document.getElementById('status');
+            const schedulesContainer = document.getElementById('schedulesContainer');
+            const loadBtn = document.getElementById('loadBtn');
+
+            statusDiv.innerHTML = '<p class="loading">Loading schedules...</p>';
+            schedulesContainer.innerHTML = '';
+            loadBtn.disabled = true;
+
+            try {
+                const response = await fetch('https://localhost:7024/Schedules');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const schedules = await response.json();
+                statusDiv.innerHTML = '';
+
+                if (Object.keys(schedules).length === 0) {
+                    schedulesContainer.innerHTML = '<p>No schedules found.</p>';
+                    return;
+                }
+
+                const periods = ['Wake', 'Leave', 'Return', 'Sleep'];
+
+                for (const [profileName, comfortLevels] of Object.entries(schedules)) {
+                    let scheduleHtml = `
+                        <div class="schedule-container">
+                            <h2>${profileName}</h2>
+
+                            <h3>Weekdays</h3>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Period</th>
+                                        <th>Time</th>
+                                        <th>Target Temperature</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    // Weekdays (indices 0-3)
+                    for (let i = 0; i < 4; i++) {
+                        const comfort = comfortLevels[i];
+                        scheduleHtml += `
+                            <tr>
+                                <td><strong>${periods[i]}</strong></td>
+                                <td>${comfort.time}</td>
+                                <td><span class="temp">${comfort.targetTemp}°C</span></td>
+                            </tr>
+                        `;
+                    }
+
+                    scheduleHtml += `
+                                </tbody>
+                            </table>
+
+                            <h3>Weekends</h3>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Period</th>
+                                        <th>Time</th>
+                                        <th>Target Temperature</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    // Weekends (indices 4-7)
+                    for (let i = 4; i < 8; i++) {
+                        const comfort = comfortLevels[i];
+                        scheduleHtml += `
+                            <tr>
+                                <td><strong>${periods[i - 4]}</strong></td>
+                                <td>${comfort.time}</td>
+                                <td><span class="temp">${comfort.targetTemp}°C</span></td>
+                            </tr>
+                        `;
+                    }
+
+                    scheduleHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+
+                    schedulesContainer.innerHTML += scheduleHtml;
+                }
+
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Error loading schedules: ${error.message}</p>`;
+                console.error('Error:', error);
+            } finally {
+                loadBtn.disabled = false;
+            }
+        }</script>
+</body>
+</html>

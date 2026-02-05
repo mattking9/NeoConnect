@@ -1,4 +1,6 @@
 
+using System;
+
 namespace NeoConnect
 {
     public class HeatingService : IHeatingService
@@ -6,15 +8,15 @@ namespace NeoConnect
         private readonly ILogger<HeatingService> _logger;
         private readonly INeoHubService _neoHub;
         private readonly IEmailService _emailService;
-        private readonly IDataService _reportDataService;
+        private readonly IDataService _dataService;
         private readonly InMemoryDataService _inMemoryDataService;
 
-        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IEmailService emailService, IDataService reportDataService, InMemoryDataService inMemoryDataService)
+        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IEmailService emailService, IDataService dataService, InMemoryDataService inMemoryDataService)
         {
             _logger = logger;
             _neoHub = neoHub;
             _emailService = emailService;
-            _reportDataService = reportDataService;
+            _dataService = dataService;
             _inMemoryDataService = inMemoryDataService;
         }        
 
@@ -33,23 +35,87 @@ namespace NeoConnect
 
                 return devices;
             }
-        }        
+        }
 
         /// <summary>
-        /// Gets profile data from the NeoHub
+        /// Gets device heating history data for the given day
+        /// </summary>
+        /// <param name="date">THe date to retrieve history data for.</param>
+        /// <param name="stoppingToken">A <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
+        /// <returns></returns>
+        public async Task<List<DeviceHistory>> GetDeviceHistory(DateTime date, CancellationToken stoppingToken)
+        {
+            var data = await _dataService.GetDeviceData(date);
+            var devices = data.GroupBy(d => d.DeviceId).ToArray();
+
+            // build the grid            
+            var grid = new List<DeviceHistory>();
+
+            foreach (var device in devices)
+            {
+                var gridItem = new DeviceHistory();
+                gridItem.DeviceName = _inMemoryDataService.GetDeviceName(device.Key);
+
+                int j = 0;
+                var deviceData = device.OrderBy(d => d.Timestamp);
+
+                foreach (var val in deviceData)
+                {
+                    var nextIdx = GetIndex(val.Timestamp);
+
+                    // Fill gaps
+                    while (j < nextIdx)
+                    {
+                        gridItem.History[j++] = "-1";
+                    }
+
+                    gridItem.History[j++] = val.PreheatActive ? "2" : val.HeatOn ? "1" : "0";
+                }
+
+                // Fill remaining
+                while (j < 96)
+                {
+                    gridItem.History[j++] = "-1";
+                }
+
+                grid.Add(gridItem);
+            }
+
+            return grid;
+        }
+
+        /// <summary>
+        /// Gets schedule data from the NeoHub
         /// </summary>
         /// <param name="stoppingToken">A <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
         /// <returns></returns>
-        public async Task<Dictionary<int, Profile>> GetProfiles(CancellationToken stoppingToken)
+        public async Task<Dictionary<string, ComfortLevel[]>> GetSchedules(CancellationToken stoppingToken)
         {
+            var schedules = new Dictionary<string, ComfortLevel[]>();
+
             using (var connection = await _neoHub.CreateConnection(stoppingToken))
             {
                 var profiles = await _neoHub.GetAllProfiles(connection, stoppingToken);
 
                 _inMemoryDataService.CacheProfileNames(profiles.Select(p => new KeyValuePair<int, string>(p.Value.ProfileId, p.Value.ProfileName)).ToDictionary());
 
-                return profiles;
+                foreach (var profile in profiles)
+                {
+                    var comfortLevels = new ComfortLevel[8];
+                    comfortLevels[0] = new ComfortLevel(profile.Value.Schedule.Weekdays.Wake);
+                    comfortLevels[1] = new ComfortLevel(profile.Value.Schedule.Weekdays.Leave);
+                    comfortLevels[2] = new ComfortLevel(profile.Value.Schedule.Weekdays.Return);
+                    comfortLevels[3] = new ComfortLevel(profile.Value.Schedule.Weekdays.Sleep);
+                    comfortLevels[4] = new ComfortLevel(profile.Value.Schedule.Weekends.Wake);
+                    comfortLevels[5] = new ComfortLevel(profile.Value.Schedule.Weekends.Leave);
+                    comfortLevels[6] = new ComfortLevel(profile.Value.Schedule.Weekends.Return);
+                    comfortLevels[7] = new ComfortLevel(profile.Value.Schedule.Weekends.Sleep);
+
+                    schedules.Add(profile.Value.ProfileName, comfortLevels);
+                }
             }
+
+            return schedules;
         }
 
         /// <summary>
@@ -151,8 +217,13 @@ namespace NeoConnect
                 var devices = (await _neoHub.GetDevices(connection, stoppingToken)).Where(d => !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);
 
                 _logger.LogInformation($"Writing device statuses to database.");
-                _reportDataService.AddDeviceData(devices, 0);
+                _dataService.AddDeviceData(devices, 0);
             }
+        }
+
+        private int GetIndex(DateTime timestamp)
+        {
+            return (timestamp.Hour * 4) + (timestamp.Minute < 15 ? 0 : timestamp.Minute < 30 ? 1 : timestamp.Minute < 45 ? 2 : 3);
         }
     }
 }

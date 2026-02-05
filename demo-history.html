@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device History API Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+            .controls label {
+                margin-right: 10px;
+                font-weight: bold;
+            }
+
+        input[type="date"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+            button:hover {
+                background-color: #0056b3;
+            }
+
+            button:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
+
+        .legend {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .legend-item {
+            display: inline-block;
+            margin-right: 20px;
+        }
+
+        .legend-box {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            vertical-align: middle;
+            border: 1px solid #ddd;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 12px;
+        }
+
+        th, td {
+            padding: 8px 4px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+
+        .device-name {
+            text-align: left;
+            font-weight: bold;
+            background-color: #f8f9fa;
+            position: sticky;
+            left: 0;
+            min-width: 150px;
+        }
+
+        .time-cell {
+            min-width: 15px;
+        }
+
+        .heating {
+            background-color: #dc3545;
+        }
+
+        .preheating {
+            background-color: #ffc107;
+        }
+
+        .off {
+            background-color: #28a745;
+        }
+
+        .no-data {
+            background-color: #e9ecef;
+        }
+
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Device History API Demo</h1>
+    <p>Endpoint: <code>GET https://localhost:7024/History?date={date}</code></p>
+
+    <div class="controls">
+        <label for="dateInput">Select Date:</label>
+        <input type="date" id="dateInput" />
+        <button id="loadBtn" onclick="loadHistory()">Load History</button>
+    </div>
+
+    <div class="legend">
+        <strong>Legend:</strong>
+        <div class="legend-item">
+            <span class="legend-box heating"></span> Heating
+        </div>
+        <div class="legend-item">
+            <span class="legend-box preheating"></span> Preheating
+        </div>
+        <div class="legend-item">
+            <span class="legend-box off"></span> Off
+        </div>
+        <div class="legend-item">
+            <span class="legend-box no-data"></span> No Data
+        </div>
+    </div>
+
+    <div id="status"></div>
+    <div class="table-container" id="tableContainer"></div>
+
+    <script>// Set default date to today
+        document.getElementById('dateInput').valueAsDate = new Date();
+
+        function formatTime(index) {
+            const hour = Math.floor(index / 4);
+            const minute = (index % 4) * 15;
+            return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        }
+
+        async function loadHistory() {
+            const statusDiv = document.getElementById('status');
+            const tableContainer = document.getElementById('tableContainer');
+            const loadBtn = document.getElementById('loadBtn');
+            const dateInput = document.getElementById('dateInput');
+
+            const selectedDate = dateInput.value;
+
+            if (!selectedDate) {
+                alert('Please select a date');
+                return;
+            }
+
+            statusDiv.innerHTML = '<p class="loading">Loading history data...</p>';
+            tableContainer.innerHTML = '';
+            loadBtn.disabled = true;
+
+            try {
+                const url = `https://localhost:7024/History?date=${selectedDate}`;
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const historyData = await response.json();
+                statusDiv.innerHTML = '';
+
+                if (historyData.length === 0) {
+                    tableContainer.innerHTML = '<p>No history data found for this date.</p>';
+                    return;
+                }
+
+                let tableHtml = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="device-name">Device</th>
+                `;
+
+                // Create time headers (96 15-minute intervals)
+                for (let i = 0; i < 96; i++) {
+                    // Only show hour markers
+                    if (i % 4 === 0) {
+                        tableHtml += `<th class="time-cell" colspan="4">${formatTime(i).split(':')[0]}h</th>`;
+                    }
+                }
+
+                tableHtml += `
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                historyData.forEach(device => {
+                    tableHtml += `
+                        <tr>
+                            <td class="device-name">${device.deviceName}</td>
+                    `;
+
+                    device.history.forEach(value => {
+                        let cellClass = 'no-data';
+                        let title = 'No data';
+
+                        switch(value) {
+                            case '0':
+                                cellClass = 'off';
+                                title = 'Off';
+                                break;
+                            case '1':
+                                cellClass = 'heating';
+                                title = 'Heating';
+                                break;
+                            case '2':
+                                cellClass = 'preheating';
+                                title = 'Preheating';
+                                break;
+                            case '-1':
+                            default:
+                                cellClass = 'no-data';
+                                title = 'No data';
+                        }
+
+                        tableHtml += `<td class="time-cell ${cellClass}" title="${title}"></td>`;
+                    });
+
+                    tableHtml += `
+                        </tr>
+                    `;
+                });
+
+                tableHtml += `
+                        </tbody>
+                    </table>
+                `;
+
+                tableContainer.innerHTML = tableHtml;
+
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Error loading history: ${error.message}</p>`;
+                console.error('Error:', error);
+            } finally {
+                loadBtn.disabled = false;
+            }
+        }</script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoConnect API Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .api-links {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .api-link {
+            display: block;
+            padding: 20px;
+            margin: 15px 0;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+            .api-link:hover {
+                background-color: #0056b3;
+            }
+
+        .description {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>NeoConnect API Demo</h1>
+    <p class="description">
+        Interactive demos for the NeoConnect Heating API<br>
+        <code>https://localhost:7024</code>
+    </p>
+
+    <div class="api-links">
+        <a href="demo-devices.html" class="api-link">
+            📱 Devices Demo
+        </a>
+        <p style="text-align: center; color: #666; margin-top: -10px;">
+            View all heating devices and their current status
+        </p>
+
+        <a href="demo-schedules.html" class="api-link">
+            📅 Schedules Demo
+        </a>
+        <p style="text-align: center; color: #666; margin-top: -10px;">
+            View heating schedules and comfort levels
+        </p>
+
+        <a href="demo-history.html" class="api-link">
+            📊 History Demo
+        </a>
+        <p style="text-align: center; color: #666; margin-top: -10px;">
+            View heating history data for any date
+        </p>
+    </div>
+</body>
+</html>

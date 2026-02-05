@@ -13,10 +13,6 @@ builder.Services.AddLogging(logging =>
 
 builder.Services.AddHttpClient();
 
-builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
-
-
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 builder.Services.AddSingleton<DeviceRepository>();
@@ -33,27 +29,43 @@ builder.Services.AddSingleton<BathroomBoostAction>();
 builder.Services.AddSingleton<GlobalHoldAction>();
 builder.Services.AddSingleton<ReportDataCollectionAction>();
 
+
 builder.Services.AddHostedService<ScheduledWorker<BathroomBoostAction>>();
 builder.Services.AddHostedService<ScheduledWorker<GlobalHoldAction>>();
 builder.Services.AddHostedService<ScheduledWorker<ReportDataCollectionAction>>();
 
+builder.Services.AddControllers();
+
+builder.Services.AddOpenApi();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost", policy =>
+    {
+        policy.WithOrigins("http://localhost:*", "https://localhost:*", "file://")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .SetIsOriginAllowed(origin => true)
+              .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
+// After building the app
+app.UseCors("AllowLocalhost");
+
+
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
+app.UseAuthorization();
 
-app.UseRouting();
-
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
+app.MapControllers();
 
 app.Run();

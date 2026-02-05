@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devices API Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+            button:hover {
+                background-color: #0056b3;
+            }
+
+            button:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .active {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .inactive {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .heating {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .preheating {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Devices API Demo</h1>
+    <p>Endpoint: <code>GET https://localhost:7024/Devices</code></p>
+
+    <button id="loadBtn" onclick="loadDevices()">Load Devices</button>
+
+    <div id="status"></div>
+    <div id="tableContainer"></div>
+
+    <script>async function loadDevices() {
+            const statusDiv = document.getElementById('status');
+            const tableContainer = document.getElementById('tableContainer');
+            const loadBtn = document.getElementById('loadBtn');
+
+            statusDiv.innerHTML = '<p class="loading">Loading devices...</p>';
+            tableContainer.innerHTML = '';
+            loadBtn.disabled = true;
+
+            try {
+                const response = await fetch('https://localhost:7024/Devices');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const devices = await response.json();
+                statusDiv.innerHTML = '';
+
+                if (devices.length === 0) {
+                    tableContainer.innerHTML = '<p>No devices found.</p>';
+                    return;
+                }
+
+                let tableHtml = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Device ID</th>
+                                <th>Zone Name</th>
+                                <th>Type</th>
+                                <th>Actual Temp</th>
+                                <th>Set Temp</th>
+                                <th>Status</th>
+                                <th>Heating</th>
+                                <th>Profile</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                devices.forEach(device => {
+                    const deviceType = device.isThermostat ? 'Thermostat' : 'Timer';
+                    const status = device.isOffline ? 'Offline' :
+                                 device.isStandby ? 'Standby' : 'Active';
+                    const statusClass = device.isOffline ? 'inactive' :
+                                      device.isStandby ? 'inactive' : 'active';
+
+                    let heatingStatus = '-';
+                    let heatingClass = '';
+                    if (device.isHeating) {
+                        heatingStatus = 'Heating';
+                        heatingClass = 'heating';
+                    } else if (device.isPreheating) {
+                        heatingStatus = 'Preheating';
+                        heatingClass = 'preheating';
+                    } else if (device.timerOn) {
+                        heatingStatus = 'Timer On';
+                        heatingClass = 'active';
+                    }
+
+                    tableHtml += `
+                        <tr>
+                            <td>${device.deviceId}</td>
+                            <td><strong>${device.zoneName}</strong></td>
+                            <td>${deviceType}</td>
+                            <td>${device.actualTemp}°C</td>
+                            <td>${device.setTemp}°C</td>
+                            <td><span class="status-badge ${statusClass}">${status}</span></td>
+                            <td>${heatingStatus ? `<span class="status-badge ${heatingClass}">${heatingStatus}</span>` : '-'}</td>
+                            <td>${device.activeProfile}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHtml += `
+                        </tbody>
+                    </table>
+                `;
+
+                tableContainer.innerHTML = tableHtml;
+
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Error loading devices: ${error.message}</p>`;
+                console.error('Error:', error);
+            } finally {
+                loadBtn.disabled = false;
+            }
+        }</script>
+</body>
+</html>
