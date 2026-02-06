@@ -25,7 +25,7 @@ namespace NeoConnect
         /// </summary>
         /// <param name="stoppingToken">A <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
         /// <returns></returns>
-        public async Task<List<NeoDevice>> GetDevices(CancellationToken stoppingToken)
+        public async Task<IEnumerable<Device>> GetDevices(CancellationToken stoppingToken)
         {
             using (var connection = await _neoHub.CreateConnection(stoppingToken))
             {
@@ -33,7 +33,7 @@ namespace NeoConnect
 
                 _inMemoryDataService.CacheDeviceNames(devices.ToDictionary(d => d.DeviceId, d => d.ZoneName));
 
-                return devices;
+                return devices.Select(d => Device.FromNeoDevice(d));
             }
         }
 
@@ -43,7 +43,7 @@ namespace NeoConnect
         /// <param name="date">THe date to retrieve history data for.</param>
         /// <param name="stoppingToken">A <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
         /// <returns></returns>
-        public async Task<List<DeviceHistory>> GetDeviceHistory(DateTime date, CancellationToken stoppingToken)
+        public async Task<IEnumerable<DeviceHistory>> GetDeviceHistory(DateTime date, CancellationToken stoppingToken)
         {
             var data = await _dataService.GetDeviceData(date);
             var devices = data.GroupBy(d => d.DeviceId).ToArray();
@@ -66,16 +66,16 @@ namespace NeoConnect
                     // Fill gaps
                     while (j < nextIdx)
                     {
-                        gridItem.History[j++] = "-1";
+                        gridItem.History[j++] = -1;
                     }
 
-                    gridItem.History[j++] = val.PreheatActive ? "2" : val.HeatOn ? "1" : "0";
+                    gridItem.History[j++] = val.PreheatActive ? 2 : val.HeatOn ? 1 : 0;
                 }
 
                 // Fill remaining
                 while (j < 96)
                 {
-                    gridItem.History[j++] = "-1";
+                    gridItem.History[j++] = -1;
                 }
 
                 grid.Add(gridItem);
@@ -89,9 +89,9 @@ namespace NeoConnect
         /// </summary>
         /// <param name="stoppingToken">A <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
         /// <returns></returns>
-        public async Task<Dictionary<string, ComfortLevel[]>> GetSchedules(CancellationToken stoppingToken)
+        public async Task<IEnumerable<Schedule>> GetSchedules(CancellationToken stoppingToken)
         {
-            var schedules = new Dictionary<string, ComfortLevel[]>();
+            var schedules = new List<Schedule>();
 
             using (var connection = await _neoHub.CreateConnection(stoppingToken))
             {
@@ -111,7 +111,7 @@ namespace NeoConnect
                     comfortLevels[6] = new ComfortLevel(profile.Value.Schedule.Weekends.Return);
                     comfortLevels[7] = new ComfortLevel(profile.Value.Schedule.Weekends.Sleep);
 
-                    schedules.Add(profile.Value.ProfileName, comfortLevels);
+                    schedules.Add(new Schedule() { ScheduleName = profile.Value.ProfileName, Intervals = comfortLevels });
                 }
             }
 

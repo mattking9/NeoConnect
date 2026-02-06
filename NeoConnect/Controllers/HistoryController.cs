@@ -13,7 +13,7 @@ namespace NeoConnect
         }       
 
         [HttpGet(Name = "Get Device History")]
-        public async Task<List<DeviceHistory>> GetHistory([FromQuery] DateTime? date)
+        public async Task<IEnumerable<DeviceHistory>> GetHistory([FromQuery] DateTime? date)
         {
             if (!date.HasValue)
             {

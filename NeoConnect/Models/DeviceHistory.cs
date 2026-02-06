@@ -4,6 +4,6 @@ namespace NeoConnect
     {
         public string DeviceName { get; set; }
 
-        public string[] History { get; set; } = new string[96];
+        public int[] History { get; set; } = new int[96];
     }
 }

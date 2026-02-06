@@ -13,7 +13,7 @@ namespace NeoConnect
         }
 
         [HttpGet(Name = "Get Schedules")]
-        public async Task<Dictionary<string, ComfortLevel[]>> Get()
+        public async Task<IEnumerable<Schedule>> Get()
         {
             return await _heatingService.GetSchedules(CancellationToken.None);            
         }

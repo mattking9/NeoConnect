@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="css/site.css" rel="stylesheet" />
+    <title>NeoConnect</title>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- Top Navigation Menu -->
+        <div class="topnav">
+            <a href="#home" class="banner">NeoConnect</a>
+            <div id="nav-items">
+                <div class="nav-item px-3"><a class="navlink" href="#news"><span class="fa fa-magic"></span>Automations</a></div>
+                <div class="nav-item px-3"><a class="navlink" href="#contact"><span class="fa fa-thermometer-half"></span>Devices</a></div>
+                <div class="nav-item px-3"><a class="navlink" href="#about"><span class="fa fa-calendar-o"></span>Schedules</a></div>
+                <div class="nav-item px-3"><a class="navlink" href="#about"><span class="fa fa-line-chart"></span>History</a></div>
+            </div>
+            <a href="javascript:void(0);" class="bars" onclick="toggleMenu()">
+                <i class="fa fa-bars"></i>
+            </a>
+        </div>
+
+        <main>
+            <article class="content px-4">
+                <div id="live-data" class="row"></div>
+            </article>
+        </main>
+    </div>
+
+    <script src="script/site.js"></script>
+    <script>
+        window.onload = loadDevices;
+    </script>
+</body>
+
+</html>

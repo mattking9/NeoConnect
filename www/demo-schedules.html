@@ -121,17 +121,19 @@
                 const schedules = await response.json();
                 statusDiv.innerHTML = '';
 
-                if (Object.keys(schedules).length === 0) {
+                if (schedules.length === 0) {
                     schedulesContainer.innerHTML = '<p>No schedules found.</p>';
                     return;
                 }
 
                 const periods = ['Wake', 'Leave', 'Return', 'Sleep'];
 
-                for (const [profileName, comfortLevels] of Object.entries(schedules)) {
+                schedules.forEach(item => {
+                    
+                
                     let scheduleHtml = `
                         <div class="schedule-container">
-                            <h2>${profileName}</h2>
+                            <h2>${item.scheduleName}</h2>
 
                             <h3>Weekdays</h3>
                             <table>
@@ -147,12 +149,12 @@
 
                     // Weekdays (indices 0-3)
                     for (let i = 0; i < 4; i++) {
-                        const comfort = comfortLevels[i];
+                        const comfort = item.intervals[i];
                         scheduleHtml += `
                             <tr>
                                 <td><strong>${periods[i]}</strong></td>
                                 <td>${comfort.time}</td>
-                                <td><span class="temp">${comfort.targetTemp}°C</span></td>
+                                <td><span class="temp">${comfort.targetTemp}C</span></td>
                             </tr>
                         `;
                     }
@@ -175,12 +177,12 @@
 
                     // Weekends (indices 4-7)
                     for (let i = 4; i < 8; i++) {
-                        const comfort = comfortLevels[i];
+                        const comfort = item.intervals[i];
                         scheduleHtml += `
                             <tr>
                                 <td><strong>${periods[i - 4]}</strong></td>
                                 <td>${comfort.time}</td>
-                                <td><span class="temp">${comfort.targetTemp}°C</span></td>
+                                <td><span class="temp">${comfort.targetTemp}C</span></td>
                             </tr>
                         `;
                     }
@@ -192,14 +194,16 @@
                     `;
 
                     schedulesContainer.innerHTML += scheduleHtml;
-                }
+                });
 
             } catch (error) {
                 statusDiv.innerHTML = `<p class="error">Error loading schedules: ${error.message}</p>`;
                 console.error('Error:', error);
             } finally {
                 loadBtn.disabled = false;
-            }
-        }</script>
+            }            
+        }
+        window.onload = loadSchedules;
+        </script>
 </body>
 </html>

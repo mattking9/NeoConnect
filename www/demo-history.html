@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="css/site.css" rel="stylesheet" />
+    <title>NeoConnect - History</title>
+</head>
+
+<body>
+
+
+    <div class="page">
+
+        <!-- Top Navigation Menu -->
+        <div class="topnav">
+            <a href="#home" class="banner">NeoConnect</a>
+            <div id="nav-items">
+                <div class="nav-item px-3"><a class="navlink" href="#news"><span
+                            class="fa fa-magic"></span>Automations</a></div>
+                <div class="nav-item px-3"><a class="navlink" href="#contact"><span
+                            class="fa fa-thermometer-half"></span>Devices</a></div>
+                <div class="nav-item px-3"><a class="navlink" href="#about"><span
+                            class="fa fa-calendar-o"></span>Schedules</a></div>
+                <div class="nav-item px-3"><a class="navlink" href="#about"><span
+                            class="fa fa-line-chart"></span>History</a></div>
+            </div>
+            <a href="javascript:void(0);" class="bars" onclick="toggleMenu()">
+                <i class="fa fa-bars"></i>
+            </a>
+        </div>
+
+        <main>
+            <article class="content px-4">
+
+                <div style="text-align:center">
+                    <h2>
+                        <button class="btn btn-light" onclick="decrDate()"> &lt; </button>
+                        &nbsp; <span id="displayDate"></span> &nbsp;
+                        <button class="btn btn-light" onclick="incrDate()"> &gt; </button>
+                    </h2>
+                </div>
+                
+
+                <div id="status"></div>
+                <div class="table-container" id="tableContainer"></div>
+
+                
+            </article>
+        </main>
+    </div>
+
+    <script>// Set default date to today
+        var displayDate = new Date('2026-01-16');
+        document.getElementById('displayDate').textContent = displayDate.toLocaleDateString('en-GB', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+       
+        async function loadHistory() {
+            const statusDiv = document.getElementById('status');
+            const tableContainer = document.getElementById('tableContainer');
+            
+            const displayDateDiv = document.getElementById('displayDate');
+                        
+            statusDiv.innerHTML = '<p class="loading">Loading history data...</p>';
+            tableContainer.innerHTML = '';            
+
+            try {
+                const url = `https://localhost:7024/History?date=${displayDate.toISOString().split('T')[0]}`;
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const historyData = await response.json();
+                statusDiv.innerHTML = '';
+
+                if (historyData.length === 0) {
+                    tableContainer.innerHTML = '<p>No history data found for this date.</p>';
+                    return;
+                }
+
+                let tableHtml = `
+                    <div id="heating-table">
+                    <table class="table">
+                        <tbody>                            
+                `;
+                
+
+                historyData.forEach(device => {
+                    tableHtml += `
+                        <tr>
+                            <th class="room">${device.deviceName}</th>
+                    `;
+
+                    device.history.forEach((value, i) => {
+                        let heatClass = '';
+                        let lineClass = (i)%4==0 ? 'line' : '';
+                        let title = 'No data';
+
+                        switch (value) {
+                            case 0:
+                                heatClass = 'off';
+                                title = 'Off';
+                                break;
+                            case 1:
+                                heatClass = 'on';
+                                title = 'Heating';
+                                break;
+                            case 2:
+                                heatClass = 'pre';
+                                title = 'Preheating';
+                                break;
+                            case -1:
+                            default:
+                                heatClass = '';
+                                title = 'No data';
+                        }
+
+                        tableHtml += `<td class="heat ${heatClass} ${lineClass}" title="${title}">&nbsp;</td>`;
+                    });
+
+                    tableHtml += `                            
+                        </tr>
+                    `;
+                });
+
+                tableHtml += `
+                        <tr class="timeline">
+                            <th class="room">&nbsp;</th>                        
+                            <th colspan="2"></th>
+                `;
+
+                // Create hour markers
+                for (let i = 1; i < 24; i++) {
+                    tableHtml += `<th colspan="4" style="text-align:center">${Number(i.toPrecision(2))}:00</th>`;                    
+                }
+
+                tableHtml += `
+                            <th colspan="2">&nbsp;</th>
+                            </tr>
+                        </tbody>
+                    </table>
+                    </div>
+                `;
+
+                tableContainer.innerHTML = tableHtml;
+
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Error loading history: ${error.message}</p>`;
+                console.error('Error:', error);
+            } finally {
+                loadBtn.disabled = false;
+            }
+        }</script>
+        <script src="script/site.js"></script>
+        <script>
+            window.onload = loadHistory;
+        </script>
+</body>
+
+</html>
