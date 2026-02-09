@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="css/site.css" rel="stylesheet" />
+    <title>NeoConnect - Devices</title>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- Top Navigation Menu -->
+        <div id="nav-container"></div>
+
+        <main>
+            <article class="content px-4">
+                <div id="live-data" class="row"></div>
+            </article>
+        </main>
+    </div>
+
+    <script src="script/site.js"></script>
+    <script>
+        loadNav();
+        window.onload = loadDevicesFull;
+    </script>
+</body>
+
+</html>

@@ -18,23 +18,55 @@ namespace NeoConnect
             _emailService = emailService;
             _dataService = dataService;
             _inMemoryDataService = inMemoryDataService;
-        }        
+        }
 
         /// <summary>
         /// Gets live device data from the NeoHub
         /// </summary>
+        /// <param name="includeAdvancedData">Flag to indicate whether to return ROC, Max Preheat and other advanced data.</param>
         /// <param name="stoppingToken">A <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
         /// <returns></returns>
-        public async Task<IEnumerable<Device>> GetDevices(CancellationToken stoppingToken)
-        {
+        public async Task<IEnumerable<Device>> GetDevices(bool includeAdvancedData, CancellationToken stoppingToken)
+        {            
+            Dictionary<string, int> rocData = null;
+            Dictionary<string, EngineersData> engineersData = null;
+            List<NeoDevice> neoDevices;
+
             using (var connection = await _neoHub.CreateConnection(stoppingToken))
-            {
-                var devices = await _neoHub.GetDevices(connection, stoppingToken);
+            {                
+                neoDevices = await _neoHub.GetDevices(connection, stoppingToken);
 
-                _inMemoryDataService.CacheDeviceNames(devices.ToDictionary(d => d.DeviceId, d => d.ZoneName));
+                _inMemoryDataService.CacheDeviceNames(neoDevices.ToDictionary(d => d.DeviceId, d => d.ZoneName));
 
-                return devices.Select(d => Device.FromNeoDevice(d));
+                if (includeAdvancedData)
+                {
+                    rocData = await _neoHub.GetROCData(connection, neoDevices.Select(d => d.ZoneName).ToArray(), stoppingToken);
+                    engineersData = await _neoHub.GetEngineersData(connection, CancellationToken.None);
+                }
             }
+
+            var devices = new List<Device>();
+
+            foreach (var neoDevice in neoDevices)
+            {
+                var device = Device.FromNeoDevice(neoDevice);
+                                                        
+                if (rocData != null && rocData.TryGetValue(device.ZoneName, out int roc))
+                {
+                    device.RoC = roc;
+                }
+
+                if (engineersData != null && engineersData.TryGetValue(device.ZoneName, out EngineersData eng))
+                {
+                    device.MaxPreheatHours = eng.MaxPreheatDuration;
+                }
+
+                device.ProfileName = _inMemoryDataService.GetProfileName(neoDevice.ActiveProfile);                
+
+                devices.Add(device);
+            }
+            
+            return devices;
         }
 
         /// <summary>

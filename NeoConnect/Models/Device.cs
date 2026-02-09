@@ -4,7 +4,7 @@ namespace NeoConnect
     public class Device
     {
         public int DeviceId { get; set; }        
-        public int ActiveProfile { get; set; }        
+        public string ProfileName { get; set; }
         public string ActualTemp { get; set; }        
         public string SetTemp { get; set; }        
         public string ZoneName { get; set; }      
@@ -14,13 +14,14 @@ namespace NeoConnect
         public bool IsHeating { get; set; }        
         public bool IsPreheating { get; set; }        
         public bool TimerOn { get; set; }
+        public int? RoC { get; set; }
+        public int? MaxPreheatHours { get; set; }
 
         public static Device FromNeoDevice(NeoDevice neoDevice)
         {
             return new Device()
             {
                 DeviceId = neoDevice.DeviceId,
-                ActiveProfile = neoDevice.ActiveProfile,
                 ActualTemp = neoDevice.ActualTemp,
                 IsHeating = neoDevice.IsHeating,
                 IsOffline = neoDevice.IsOffline,

@@ -106,10 +106,6 @@ main {
         white-space: nowrap;
     }
 
-    #heating-table td {
-        /*border: 1px solid #ddd;*/
-    }
-
     #heating-table .room {
         position: absolute;
         width: 5em;
