@@ -57,7 +57,7 @@ app.UseDeveloperExceptionPage();
 //app.UseHttpsRedirection();
 
 app.UseDefaultFiles();
-app.MapStaticAssets();
+app.UseStaticFiles();
 
 app.UseAuthorization();
 
