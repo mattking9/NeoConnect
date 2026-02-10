@@ -1,4 +1,4 @@
-const url = 'https://localhost:7024';
+const url = '';
 var displayDate = new Date();
 
 async function loadDevices() {            

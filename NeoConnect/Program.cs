@@ -3,6 +3,8 @@ using NeoConnect.DataAccess;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.UseStaticWebAssets();
+
 builder.Services.AddLogging(logging =>
     logging.AddSimpleConsole(options =>
     {
@@ -62,7 +64,12 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseDeveloperExceptionPage();
+
 app.UseHttpsRedirection();
+
+app.UseDefaultFiles();
+app.MapStaticAssets();
 
 app.UseAuthorization();
 
