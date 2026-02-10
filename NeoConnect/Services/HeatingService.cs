@@ -90,10 +90,11 @@ namespace NeoConnect
 
                 int j = 0;
                 var deviceData = device.OrderBy(d => d.Timestamp);
-
+                int lastIdx = -1;
                 foreach (var val in deviceData)
                 {
                     var nextIdx = GetIndex(val.Timestamp);
+
 
                     // Fill gaps
                     while (j < nextIdx)
@@ -101,7 +102,10 @@ namespace NeoConnect
                         gridItem.History[j++] = -1;
                     }
 
-                    gridItem.History[j++] = val.PreheatActive ? 2 : val.HeatOn ? 1 : 0;
+                    gridItem.History[nextIdx] = val.PreheatActive ? 2 : val.HeatOn ? 1 : 0;
+                    if (nextIdx != lastIdx) // Don't let duplicate entries for same index throw out our sequence!
+                        j++;
+                    lastIdx = nextIdx;
                 }
 
                 // Fill remaining

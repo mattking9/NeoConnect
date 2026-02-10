@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="css/site.css" rel="stylesheet" />
+    <title>NeoConnect - Automations</title>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- Top Navigation Menu -->
+        <div id="nav-container"></div>
+
+        <main>
+            <article class="content px-4">
+                <h1>Automations</h1>
+
+                <div class="row">
+
+                    <div class="col-md-4">
+                        <div class="card text-center mt-3">
+                            <div class="card-body">
+                                <h5 class="card-title truncate">Warm Weather Hold</h5>
+                                <p class="card-text">Holds all thrmostats at 0.5° below their set temperature if it is due to be warm and/or sunny in 1 hour's time.</p>                                
+                                <button class="btn btn-primary mr-2"><i class="fa fa-bolt">&nbsp;</i> Run Now</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card text-center mt-3">
+                            <div class="card-body">
+                                <h5 class="card-title truncate">Cold Bathroom Boost</h5>
+                                <p class="card-text">Turns on the Bathroom Towel Radiator (in addition to UFH) if the Bathroom is 1° or more below it's target temperature.</p>                                
+                                <button class="btn btn-primary mr-2"><i class="fa fa-bolt">&nbsp;</i> Run Now</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card text-center mt-3">
+                            <div class="card-body">
+                                <h5 class="card-title truncate">Data Collection</h5>
+                                <p class="card-text">Periodically gathers status data on all devices and saves them to the database for reporting purposes.</p>
+                                <button id="dataCollectionBtn" class="btn btn-primary mr-2" onclick="dataCollection()"><i class="fa fa-bolt">&nbsp;</i> Run Now</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <script src="script/site.js"></script>
+    <script>
+        loadNav();
+    </script>
+</body>
+
+</html>

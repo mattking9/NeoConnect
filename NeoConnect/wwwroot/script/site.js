@@ -30,10 +30,10 @@ async function loadDevices() {
                             <p class="card-title truncate">${device.zoneName}</p>
                             <p class="card-text">
                                 <span class="${(device.isHeating || device.timerOn) ? "on" : device.isPreheating ? "pre" : ""}" style="font-size:2em;">
-                                    ${(device.isThermostat ? device.actualTemp + "°" : device.timerOn ? "ON" : "OFF")}
+                                    ${(device.isThermostat ? device.actualTemp + "&deg;" : device.timerOn ? "ON" : "OFF")}
                                 </span>
                             </p>
-                            <p class="card-subtitle mb-2 text-muted">${(device.isThermostat ? device.setTemp + "°" : "n/a")}</p>
+                            <p class="card-subtitle mb-2 text-muted">${(device.isThermostat ? device.setTemp + "&deg;" : "n/a")}</p>
                         </div>
                     </div>
                 </div>
@@ -75,22 +75,26 @@ async function loadDevicesFull() {
                         <th>Current Profile</th>
                         <th>Current Temp</th>
                         <th>Set Temp</th>
-                        <th>Rate of Change</th>
+                        <th>RoC</th>
                         <th>Max Preheat</th>
                     </tr>            
                 </thead>
                 <tbody>`;
 
         devices.forEach(device => {
-            tableHtml += `
+
+            if (device.isThermostat) {
+
+                tableHtml += `
                     <tr id="d${device.deviceId}">
                         <th>${device.zoneName}</th>
                         <td>${device.profileName}</td>
-                        <td>${device.actualTemp}°</td>
-                        <td>${device.setTemp}°</td>
+                        <td>${device.actualTemp}&deg;</td>
+                        <td>${device.setTemp}&deg;</td>
                         <td>${device.roC}</td>
                         <td>${device.maxPreheatHours} hours</td>
                     </tr>`;
+            }
         });
 
         tableHtml += `
@@ -105,15 +109,13 @@ async function loadDevicesFull() {
     }
 }
 
-async function loadHistory() {
-    const statusDiv = document.getElementById('status');
+async function loadHistory() {    
     const tableContainer = document.getElementById('tableContainer');
     
     const displayDateDiv = document.getElementById('displayDate');
     displayDateDiv.textContent = displayDate.toLocaleDateString('en-GB', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
                 
-    statusDiv.innerHTML = '<p class="loading">Loading history data...</p>';
-    tableContainer.innerHTML = '';            
+    tableContainer.innerHTML = '<p class="loading">Loading history data...</p>';    
 
     try {        
         const response = await fetch(`${url}/History?date=${displayDate.toISOString().split('T')[0]}`);
@@ -123,7 +125,6 @@ async function loadHistory() {
         }
 
         const historyData = await response.json();
-        statusDiv.innerHTML = '';
 
         if (historyData.length === 0) {
             tableContainer.innerHTML = '<p>No history data found for this date.</p>';
@@ -197,7 +198,7 @@ async function loadHistory() {
         tableContainer.innerHTML = tableHtml;
 
     } catch (error) {
-        statusDiv.innerHTML = `<p class="error">Error loading history: ${error.message}</p>`;
+        tableContainer.innerHTML = `<p class="error">Error loading history: ${error.message}</p>`;
         console.error('Error:', error);
     }
 }
@@ -221,7 +222,75 @@ function toggleMenu() {
     }
 }
 
-function loadNav() {
+async function loadSchedules() {
+
+    const schedulesContainer = document.getElementById('schedules');
+    schedulesContainer.innerHTML = '<p class="loading">Loading schedules...</p>';    
+
+    try {
+        const response = await fetch(`${url}/Schedules`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const schedules = await response.json();        
+
+        if (schedules.length === 0) {
+            schedulesContainer.innerHTML = '<p>No schedules found.</p>';
+            return;
+        }
+
+        let scheduleHtml = `
+            <table class="table table-striped" width="100%">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th colspan="4" style="text-align:center">Weekdays</th>
+                    <th colspan="4" style="text-align:center">Weekends</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th style="text-align:center">Wake</th>
+                    <th style="text-align:center">Leave</th>
+                    <th style="text-align:center">Return</th>
+                    <th style="text-align:center">Sleep</th>
+                    <th style="text-align:center">Wake</th>
+                    <th style="text-align:center">Leave</th>
+                    <th style="text-align:center">Return</th>
+                    <th style="text-align:center">Sleep</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+
+        schedules.forEach(item => {
+            scheduleHtml += `
+                    <tr>
+                        <th>${item.scheduleName}</th>`;
+
+            item.intervals.forEach(i => {
+                scheduleHtml += `<td width="11%" style="text-align:center">${i.time.slice(0, 5)}<br /><span style="font-weight:bold;font-size:1.2em;">${i.targetTemp}</span>&deg;</td>`;
+            })
+
+            scheduleHtml += `
+                    </tr>`;
+
+        });    
+
+        scheduleHtml += `
+            </tbody>
+        </table>`;
+        
+        schedulesContainer.innerHTML = scheduleHtml;
+
+    } catch (error) {
+        schedulesContainer.innerHTML = `<p class="error">Error loading schedules: ${error.message}</p>`;
+        console.error('Error:', error);
+    }
+}
+
+async function loadNav() {
     const navContainer = document.getElementById('nav-container');
     navContainer.innerHTML= `
     <div class="topnav">
@@ -237,4 +306,20 @@ function loadNav() {
             <i class="fa fa-bars"></i>
         </a>
     </div>`;
+}
+
+async function dataCollection() {
+    runAction("data_collection", "dataCollectionBtn")
+}
+
+async function runAction(actionName, btnId) {
+    const btn = document.getElementById(btnId);
+    btn.disabled = true;
+    const response = await fetch(`${url}/Actions?actionName=${actionName}`, {method: "POST"});
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    btn.disabled = false;
 }
