@@ -40,18 +40,6 @@ builder.Services.AddControllers();
 
 builder.Services.AddOpenApi();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowLocalhost", policy =>
-    {
-        policy.WithOrigins("http://localhost:*", "https://localhost:*", "file://")
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .SetIsOriginAllowed(origin => true)
-              .AllowCredentials();
-    });
-});
-
 var app = builder.Build();
 
 // After building the app
@@ -66,7 +54,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseDeveloperExceptionPage();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseDefaultFiles();
 app.MapStaticAssets();

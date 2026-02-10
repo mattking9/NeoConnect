@@ -1,4 +1,4 @@
-const url = '';
+const url = '/api';
 var displayDate = new Date();
 
 async function loadDevices() {            

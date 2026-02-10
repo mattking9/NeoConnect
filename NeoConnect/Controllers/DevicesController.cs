@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace NeoConnect
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class DevicesController : ControllerBase
     {
         private readonly IHeatingService _heatingService;
