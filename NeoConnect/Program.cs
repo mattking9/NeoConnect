@@ -52,8 +52,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseDeveloperExceptionPage();
-
 //app.UseHttpsRedirection();
 
 app.UseDefaultFiles();

@@ -1,31 +1,4 @@
 
-h1:focus {
-    outline: none;
-}
-
-/*
-a, .btn-link {
-    color: #0071c1;
-}
-
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
-} */
-
-
-
-
-.page {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-}
-
-main {
-    flex: 1;
-}
 
 /* navbar */
 
@@ -86,7 +59,7 @@ main {
 /* end of navbar */
 
 .content {
-    padding-top: 1.1rem;
+    padding-top: 1rem;
 }
 
 .card {
@@ -125,17 +98,17 @@ main {
     background-color: #e10202;
 }
 
-#heating-table .off.line, #heating-table .line  {
+#heating-table .off.line  {
     border-left: 1px solid #dee2e6;
 }
 
-    #live-data .on {
-        color: #e10202;
-    }
+#live-data .on {
+    color: #e10202;
+}
 
-    #live-data .pre {
-        color: #ff9c00;
-    }
+#live-data .pre {
+    color: #ff9c00;
+}
 
 .truncate {    
     white-space: nowrap;
