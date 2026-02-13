@@ -9,6 +9,7 @@ namespace NeoConnect
         Task LogDeviceStatuses(CancellationToken stoppingToken);
         Task<IEnumerable<Device>> GetDevices(bool includeAdvancedData, CancellationToken stoppingToken);
         Task<IEnumerable<DeviceHistory>> GetDeviceHistory(DateTime date, CancellationToken stoppingToken);
-        Task<IEnumerable<Schedule>> GetSchedules(CancellationToken stoppingToken);
+        Task<IEnumerable<Schedule>> GetSchedules(CancellationToken stoppingToken);        
+        Task SetTemperature(string deviceName, double temp, CancellationToken stoppingToken);
     }
 }

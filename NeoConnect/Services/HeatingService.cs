@@ -153,6 +153,14 @@ namespace NeoConnect
 
             return schedules;
         }
+       
+        public async Task SetTemperature(string deviceName, double temp, CancellationToken stoppingToken)
+        {
+            using (var connection = await _neoHub.CreateConnection(stoppingToken))
+            {
+                await _neoHub.SetTemperature(connection, deviceName, temp, stoppingToken);
+            }
+        }
 
         /// <summary>
         /// Boosts the towel rail in the bathroom for one hour if the bathroom temperature is at least one degree below

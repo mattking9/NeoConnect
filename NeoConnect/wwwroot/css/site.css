@@ -102,11 +102,11 @@
     border-left: 1px solid #dee2e6;
 }
 
-#live-data .on {
+.on {
     color: #e10202;
 }
 
-#live-data .pre {
+.pre {
     color: #ff9c00;
 }
 

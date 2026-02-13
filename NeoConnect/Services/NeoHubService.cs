@@ -83,20 +83,29 @@ namespace NeoConnect
             return JsonSerializer.Deserialize(result.ResponseJson, NeoConnectJsonContext.Default.DictionaryStringInt32) ?? throw new Exception($"Error parsing VIEW_ROC json: {result.ResponseJson}");
         }
 
-        public async Task RunRecipe(INeoConnection connection, string recipeName, CancellationToken cancellationToken)
+        //public async Task RunRecipe(INeoConnection connection, string recipeName, CancellationToken cancellationToken)
+        //{
+        //    _logger.LogInformation($"Running recipe: {recipeName}.");
+
+        //    await SendMessage(connection, "RUN_RECIPE", $"['{recipeName}']", _inc++, cancellationToken);
+
+        //    await ReceiveMessage(connection, cancellationToken);
+        //}
+
+        //public async Task SetPreheatDuration(INeoConnection connection, string zoneName, int maxPreheatDuration, CancellationToken cancellationToken)
+        //{
+        //    _logger.LogInformation($"Setting preheat duration for {zoneName} to {maxPreheatDuration} hours.");
+
+        //    await SendMessage(connection, "SET_PREHEAT", $"[{maxPreheatDuration}, '{zoneName}']", _inc++, cancellationToken);
+
+        //    await ReceiveMessage(connection, cancellationToken);
+        //}
+
+        public async Task SetTemperature(INeoConnection connection, string deviceName, double temp, CancellationToken cancellationToken)
         {
-            _logger.LogInformation($"Running recipe: {recipeName}.");
+            _logger.LogInformation($"Setting Device '{deviceName}' to {temp}c (until next interval).");
 
-            await SendMessage(connection, "RUN_RECIPE", $"['{recipeName}']", _inc++, cancellationToken);
-
-            await ReceiveMessage(connection, cancellationToken);
-        }
-
-        public async Task SetPreheatDuration(INeoConnection connection, string zoneName, int maxPreheatDuration, CancellationToken cancellationToken)
-        {
-            _logger.LogInformation($"Setting preheat duration for {zoneName} to {maxPreheatDuration} hours.");
-
-            await SendMessage(connection, "SET_PREHEAT", $"[{maxPreheatDuration}, '{zoneName}']", _inc++, cancellationToken);
+            await SendMessage(connection, "SET_TEMP", $"[{temp},'{deviceName}']", _inc++, cancellationToken);
 
             await ReceiveMessage(connection, cancellationToken);
         }

@@ -1,10 +1,12 @@
 const url = '/api';
 var displayDate = new Date();
 
-async function loadDevices() {            
+async function loadDevices(isBackground) {
     const container = document.getElementById('live-data');
 
-    container.innerHTML = '<p class="loading">Loading devices...</p>';            
+    if (!isBackground) {
+        container.innerHTML = '<p class="loading">Loading devices...</p>';
+    }
 
     try {
         const response = await fetch(`${url}/Devices`);
@@ -28,12 +30,39 @@ async function loadDevices() {
                     <div class="card text-center mt-3">
                         <div class="card-body">
                             <p class="card-title truncate">${device.zoneName}</p>
-                            <p class="card-text">
-                                <span class="${(device.isHeating || device.timerOn) ? "on" : device.isPreheating ? "pre" : ""}" style="font-size:2em;">
-                                    ${(device.isThermostat ? device.actualTemp + "&deg;" : device.timerOn ? "ON" : "OFF")}
-                                </span>
+                            <p class="card-text">`;
+
+            if (device.isThermostat) {
+                html += `
+                                <span class="${device.isHeating ? "on" : device.isPreheating ? "pre" : ""}" style="font-size:2em;">
+                                    ${device.actualTemp}&deg;
+                                </span>`;
+            }
+            else {
+                html += `
+                                <span class="${device.timerOn ? "on" : ""}" style="font-size:2em;">
+                                ${device.timerOn ? "ON" : "OFF"}
+                                </span>`;
+            }
+
+            html += `
                             </p>
-                            <p class="card-subtitle mb-2 text-muted">${(device.isThermostat ? device.setTemp + "&deg;" : "n/a")}</p>
+                            <p class="card-subtitle mb-2 text-muted">`;
+
+            if (device.isThermostat) {
+                html += `
+                                <button class="btn btn-light btn-sm rounded-circle p-2 lh-1" onclick="setTemp('${device.zoneName}', ${device.setTemp - 0.5})">
+                                    <i class="fa fa-minus"></i></button>
+                                ${device.setTemp}&deg;
+                                <button class="btn btn-light btn-sm rounded-circle p-2 lh-1" onclick="setTemp('${device.zoneName}', ${device.setTemp + 0.5})">
+                                    <i class="fa fa-plus"></i></button>`;
+            }
+            else {
+                html += `
+                                <button class="btn btn-light btn-sm p-2 lh-1" type="button">Boost 1hr</button>`;
+            }
+            html += `               
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -43,7 +72,9 @@ async function loadDevices() {
         container.innerHTML = html;
 
     } catch (error) {
-        container.innerHTML = `<p class="error">Error loading devices: ${error.message}</p>`;
+        if (!isBackground) {
+            container.innerHTML = `<p class="error">Error loading devices: ${error.message}</p>`;
+        }
         console.error('Error:', error);
     }
 }
@@ -86,7 +117,7 @@ async function loadDevicesFull() {
             if (device.isThermostat) {
 
                 tableHtml += `
-                    <tr id="d${device.deviceId}">
+                    <tr id="d${device.deviceId}" class="${device.isHeating ? "on" : device.isPreheating ? "pre" : ""}">
                         <th>${device.zoneName}</th>
                         <td>${device.profileName}</td>
                         <td>${device.actualTemp}&deg;</td>
@@ -315,11 +346,36 @@ async function dataCollection() {
 async function runAction(actionName, btnId) {
     const btn = document.getElementById(btnId);
     btn.disabled = true;
-    const response = await fetch(`${url}/Actions?actionName=${actionName}`, {method: "POST"});
+    const response = await fetch(`${url}/Actions?actionName=${actionName}`, {method: "POST"});    
+    btn.disabled = false;
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+}
+
+async function setTemp(deviceName, temp) {    
+    let btns = document.getElementsByClassName('btn');
+    for (let i = 0; i < btns.length; i++) {
+        btns[i].disabled = true;
+    }
+
+    const response = await fetch(`${url}/Devices/temperature`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ zoneName: deviceName, setTemp: temp }),
+    });
+
+    for (let i = 0; i < btns.length; i++) {
+        btns[i].disabled = false;
+    }
 
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    btn.disabled = false;
+    //reload
+    await loadDevices(true);
 }
