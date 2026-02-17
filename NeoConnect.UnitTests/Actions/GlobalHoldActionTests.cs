@@ -54,19 +54,15 @@ namespace NeoConnect.UnitTests
             var forecastDay = new ForecastDay { Hour = new List<ForecastHour>() };
             var forecast = new Forecast { ForecastDay = new List<ForecastDay> { forecastDay } };
 
-            _mockWeatherService.Setup(w => w.GetForecast(token)).ReturnsAsync(forecast);
-            _mockHeatingService.Setup(h => h.Init(token)).Returns(Task.CompletedTask);
-            _mockHeatingService.Setup(h => h.ReduceSetTempWhenExternalTempIsWarm(forecastDay, token)).Returns(Task.CompletedTask);
-            _mockHeatingService.Setup(h => h.Cleanup(token)).Returns(Task.CompletedTask);
+            _mockWeatherService.Setup(w => w.GetForecast(token)).ReturnsAsync(forecast);            
+            _mockHeatingService.Setup(h => h.ReduceSetTempWhenExternalTempIsWarm(forecastDay, token)).Returns(Task.CompletedTask);            
 
             // Act
             await _action.Action(token);
 
             // Assert
             _mockWeatherService.Verify(w => w.GetForecast(token), Times.Once);
-            _mockHeatingService.Verify(h => h.Init(token), Times.Once);
             _mockHeatingService.Verify(h => h.ReduceSetTempWhenExternalTempIsWarm(forecastDay, token), Times.Once);
-            _mockHeatingService.Verify(h => h.Cleanup(token), Times.Once);
         }
     }
 }

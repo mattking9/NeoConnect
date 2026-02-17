@@ -25,5 +25,23 @@ namespace NeoConnect
             await _heatingService.SetTemperature(device.ZoneName, device.SetTemp, CancellationToken.None);
             return Ok();
         }
+
+        [HttpGet("history", Name = "Get Device History")]
+        public async Task<IEnumerable<DeviceHistory>> GetHistory([FromQuery] DateTime? date)
+        {
+            if (!date.HasValue)
+            {
+                date = DateTime.Today;
+            }
+
+            return await _heatingService.GetDeviceHistory(date.Value);
+        }
+
+        [HttpGet("setup", Name = "Setup")] // Use GET so that we can call directly from a browser
+        public async Task<IActionResult> Setup()
+        {
+            await _heatingService.RefreshDeviceList(CancellationToken.None);
+            return Ok();
+        }
     }
 }

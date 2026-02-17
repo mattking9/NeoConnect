@@ -149,7 +149,7 @@ async function loadHistory() {
     tableContainer.innerHTML = '<p class="loading">Loading history data...</p>';    
 
     try {        
-        const response = await fetch(`${url}/History?date=${displayDate.toISOString().split('T')[0]}`);
+        const response = await fetch(`${url}/devices/history?date=${displayDate.toISOString().split('T')[0]}`);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);

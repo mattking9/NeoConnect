@@ -16,18 +16,18 @@ namespace NeoConnect.DataAccess
             _config = config;
         }
 
-        //todo: get data per day
-        public async Task<IEnumerable<DeviceState>> GetDeviceData(DateTime dateToDisplay)
+        public async Task<IEnumerable<DeviceStateEntity>> GetDeviceData(DateTime dateToDisplay)
         {
             using (var connection = new SqliteConnection(_config.GetConnectionString("Default") ?? _connectionString))
             {
                 try
                 {
-                    const string sql = @"SELECT DeviceId, SetTemp, ActualTemp, HeatOn, PreheatActive, OutsideTemp, Timestamp 
-                                        FROM DeviceState 
+                    const string sql = @"SELECT ds.DeviceId, DeviceName, SetTemp, ActualTemp, HeatOn, PreheatActive, OutsideTemp, Timestamp 
+                                        FROM DeviceState ds
+                                        LEFT JOIN Device d ON ds.DeviceId = d.DeviceId
                                         WHERE Timestamp >= @StartDate AND Timestamp < @EndDate";
 
-                    return await connection.QueryAsync<DeviceState>(sql, new
+                    return await connection.QueryAsync<DeviceStateEntity>(sql, new
                     {
                         StartDate = dateToDisplay.Date,
                         EndDate = dateToDisplay.Date.AddDays(1)
@@ -41,7 +41,7 @@ namespace NeoConnect.DataAccess
             }
         }
 
-        public void AddDeviceData(IEnumerable<DeviceState> deviceStates)
+        public void AddDeviceData(IEnumerable<DeviceStateEntity> deviceStates)
         {
             using (var connection = new SqliteConnection(_config.GetConnectionString("Default") ?? _connectionString))
             {
@@ -60,6 +60,31 @@ namespace NeoConnect.DataAccess
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error Adding Device State Data");
+                    throw;
+                }
+            }
+        }
+
+        public void AddDevices(IEnumerable<DeviceEntity> devices)
+        {
+            using (var connection = new SqliteConnection(_config.GetConnectionString("Default") ?? _connectionString))
+            {
+                try
+                {
+                    const string sql = "INSERT INTO Device (DeviceId, DeviceName) " +
+                                   "VALUES (@DeviceId, @DeviceName)";
+
+                    connection.Open();
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        connection.Execute("DELETE FROM Device", devices, transaction);
+                        connection.Execute(sql, devices, transaction);
+                        transaction.Commit();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error Adding Devices");
                     throw;
                 }
             }

@@ -103,11 +103,11 @@
 }
 
 .on {
-    color: #e10202;
+    color: #e10202!important;
 }
 
 .pre {
-    color: #ff9c00;
+    color: #ff9c00!important;
 }
 
 .truncate {    

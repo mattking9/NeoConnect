@@ -9,15 +9,13 @@ namespace NeoConnect
         private readonly INeoHubService _neoHub;
         private readonly IEmailService _emailService;
         private readonly IDataService _dataService;
-        private readonly InMemoryDataService _inMemoryDataService;
 
-        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IEmailService emailService, IDataService dataService, InMemoryDataService inMemoryDataService)
+        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IEmailService emailService, IDataService dataService)
         {
             _logger = logger;
             _neoHub = neoHub;
             _emailService = emailService;
             _dataService = dataService;
-            _inMemoryDataService = inMemoryDataService;
         }
 
         /// <summary>
@@ -30,18 +28,18 @@ namespace NeoConnect
         {            
             Dictionary<string, int> rocData = null;
             Dictionary<string, EngineersData> engineersData = null;
+            Dictionary<int, Profile> profiles = null;
             List<NeoDevice> neoDevices;
 
             using (var connection = await _neoHub.CreateConnection(stoppingToken))
             {                
                 neoDevices = await _neoHub.GetDevices(connection, stoppingToken);
 
-                _inMemoryDataService.CacheDeviceNames(neoDevices.ToDictionary(d => d.DeviceId, d => d.ZoneName));
-
                 if (includeAdvancedData)
                 {
                     rocData = await _neoHub.GetROCData(connection, neoDevices.Select(d => d.ZoneName).ToArray(), stoppingToken);
-                    engineersData = await _neoHub.GetEngineersData(connection, CancellationToken.None);
+                    engineersData = await _neoHub.GetEngineersData(connection, stoppingToken);
+                    profiles = await _neoHub.GetAllProfiles(connection, stoppingToken);
                 }
             }
 
@@ -61,7 +59,10 @@ namespace NeoConnect
                     device.MaxPreheatHours = eng.MaxPreheatDuration;
                 }
 
-                device.ProfileName = _inMemoryDataService.GetProfileName(neoDevice.ActiveProfile);                
+                if (profiles != null && profiles.TryGetValue(neoDevice.ActiveProfile, out Profile profile))
+                {
+                    device.ProfileName = profile.ProfileName;
+                }
 
                 devices.Add(device);
             }
@@ -73,12 +74,11 @@ namespace NeoConnect
         /// Gets device heating history data for the given day
         /// </summary>
         /// <param name="date">THe date to retrieve history data for.</param>
-        /// <param name="stoppingToken">A <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
         /// <returns></returns>
-        public async Task<IEnumerable<DeviceHistory>> GetDeviceHistory(DateTime date, CancellationToken stoppingToken)
+        public async Task<IEnumerable<DeviceHistory>> GetDeviceHistory(DateTime date)
         {
             var data = await _dataService.GetDeviceData(date);
-            var devices = data.GroupBy(d => d.DeviceId).ToArray();
+            var devices = data.GroupBy(d => d.DeviceName ?? $"Device {d.DeviceId}").ToArray();
 
             // build the grid            
             var grid = new List<DeviceHistory>();
@@ -86,7 +86,7 @@ namespace NeoConnect
             foreach (var device in devices)
             {
                 var gridItem = new DeviceHistory();
-                gridItem.DeviceName = _inMemoryDataService.GetDeviceName(device.Key);
+                gridItem.DeviceName = device.Key;
 
                 int j = 0;
                 var deviceData = device.OrderBy(d => d.Timestamp);
@@ -132,8 +132,6 @@ namespace NeoConnect
             using (var connection = await _neoHub.CreateConnection(stoppingToken))
             {
                 var profiles = await _neoHub.GetAllProfiles(connection, stoppingToken);
-
-                _inMemoryDataService.CacheProfileNames(profiles.Select(p => new KeyValuePair<int, string>(p.Value.ProfileId, p.Value.ProfileName)).ToDictionary());
 
                 foreach (var profile in profiles)
                 {
@@ -251,6 +249,17 @@ namespace NeoConnect
                     await _neoHub.Hold(connection, holdGroup, [device.ZoneName], Convert.ToDouble(device.SetTemp) - 0.5, 1, stoppingToken);
                 }
                 await _emailService.SendInfoEmail(devices.Select(d => $"Holding {d.ZoneName} down 0.5c for 1 hour"), stoppingToken);
+            }
+        }
+
+        public async Task RefreshDeviceList(CancellationToken stoppingToken)
+        {
+            using (var connection = await _neoHub.CreateConnection(stoppingToken))
+            {
+                var devices = (await _neoHub.GetDevices(connection, stoppingToken));
+
+                _logger.LogInformation($"Writing device list to database.");
+                _dataService.RefreshDeviceList(devices);
             }
         }
 

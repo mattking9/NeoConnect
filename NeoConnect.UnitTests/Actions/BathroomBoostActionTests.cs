@@ -48,17 +48,13 @@ namespace NeoConnect.UnitTests
         {
             // Arrange
             var token = new CancellationToken();
-            _mockHeatingService.Setup(s => s.Init(token)).Returns(Task.CompletedTask);
             _mockHeatingService.Setup(s => s.BoostTowelRailWhenBathroomIsCold(token)).Returns(Task.CompletedTask);
-            _mockHeatingService.Setup(s => s.Cleanup(token)).Returns(Task.CompletedTask);
 
             // Act
             await _action.Action(token);
 
             // Assert
-            _mockHeatingService.Verify(s => s.Init(token), Times.Once);
             _mockHeatingService.Verify(s => s.BoostTowelRailWhenBathroomIsCold(token), Times.Once);
-            _mockHeatingService.Verify(s => s.Cleanup(token), Times.Once);
         }
     }
 }
