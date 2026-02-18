@@ -23,8 +23,6 @@ namespace NeoConnect
 
             foreach (var device in deviceList)
             {
-                if (!device.IsThermostat) continue;
-
                 double setTemp = double.TryParse(device.SetTemp, out double st) ? st : 0.0;
                 double actualTemp = double.TryParse(device.ActualTemp, out double at) ? at : 0.0;
 
@@ -33,7 +31,7 @@ namespace NeoConnect
                     DeviceId = device.DeviceId,
                     SetTemp = setTemp,
                     ActualTemp = actualTemp,
-                    HeatOn = device.IsHeating,
+                    HeatOn = device.IsHeating || device.TimerOn,
                     PreheatActive = device.IsPreheating,
                     OutsideTemp = outsideTemperature,
                     Timestamp = DateTime.UtcNow // Use UTC for consistency
