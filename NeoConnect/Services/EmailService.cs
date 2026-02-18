@@ -1,6 +1,4 @@
-﻿using System.Net;
-using System.Net.Mail;
-using System.Text;
+﻿using System.Text;
 
 namespace NeoConnect
 {
@@ -8,11 +6,13 @@ namespace NeoConnect
     {
         private readonly ILogger<EmailService> _logger;
         private readonly IConfiguration _config;
+        private readonly ISmtpClientWrapper _smtpClient;
 
-        public EmailService(ILogger<EmailService> logger, IConfiguration config)
+        public EmailService(ILogger<EmailService> logger, IConfiguration config, ISmtpClientWrapper smtpClient)
         {
             _logger = logger;
             _config = config;
+            _smtpClient = smtpClient;
         }
 
         public async Task<bool> SendInfoEmail(string info, CancellationToken stoppingToken)
@@ -60,39 +60,16 @@ namespace NeoConnect
         {
             try
             {
-                var smtpHost = _config["Smtp:Host"];
-                var smtpPort = _config["Smtp:Port"];
                 var smtpUsername = _config["Smtp:Username"];
-                var smtpPassword = _config["Smtp:Password"];
                 var smtpToAddress = _config["Smtp:ToAddress"];
 
-                if (string.IsNullOrEmpty(smtpHost)
-                    || string.IsNullOrEmpty(smtpPort)
-                    || string.IsNullOrEmpty(smtpUsername)
-                    || string.IsNullOrEmpty(smtpPassword)
-                    || string.IsNullOrEmpty(smtpToAddress))
+                if (string.IsNullOrEmpty(smtpUsername) || string.IsNullOrEmpty(smtpToAddress))
                 {
                     _logger.LogWarning($"Unable to send email '{subject}' as email config is incomplete.");
                     return false;
                 }
 
-                using (var smtpClient = new SmtpClient(smtpHost, int.Parse(smtpPort)))
-                {
-                    smtpClient.EnableSsl = true;
-                    smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
-                    smtpClient.UseDefaultCredentials = false;
-                    smtpClient.Credentials = new NetworkCredential(smtpUsername, smtpPassword);
-
-                    using (var mailMessage = new MailMessage(smtpUsername, smtpToAddress)
-                    {
-                        Subject = subject,
-                        Body = body,
-                        IsBodyHtml = isHtml
-                    })
-                    {
-                        await smtpClient.SendMailAsync(mailMessage, stoppingToken);
-                    }
-                }
+                await _smtpClient.SendMailAsync(smtpUsername, smtpToAddress, subject, body, isHtml, stoppingToken);
 
                 return true;
             }
