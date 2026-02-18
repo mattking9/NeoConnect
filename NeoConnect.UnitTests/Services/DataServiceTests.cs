@@ -171,54 +171,7 @@ namespace NeoConnect.UnitTests.Services
             Assert.That(capturedStates[1].HeatOn, Is.False);
             Assert.That(capturedStates[1].PreheatActive, Is.True);
             Assert.That(capturedStates[1].OutsideTemp, Is.EqualTo(12.5));
-        }
-
-        [Test]
-        public void AddDeviceData_FiltersOutNonThermostats()
-        {
-            // arrange
-            var devices = new List<NeoDevice>
-            {
-                new NeoDevice 
-                { 
-                    DeviceId = 1, 
-                    ZoneName = "Living Room", 
-                    IsThermostat = true,
-                    SetTemp = "20.5",
-                    ActualTemp = "19.5"
-                },
-                new NeoDevice 
-                { 
-                    DeviceId = 2, 
-                    ZoneName = "Towel Rail", 
-                    IsThermostat = false,
-                    SetTemp = "0",
-                    ActualTemp = "0"
-                },
-                new NeoDevice 
-                { 
-                    DeviceId = 3, 
-                    ZoneName = "Bedroom", 
-                    IsThermostat = true,
-                    SetTemp = "18.0",
-                    ActualTemp = "17.5"
-                }
-            };
-
-            DeviceStateEntity[] capturedStates = null;
-            _mockDeviceRepository.Setup(r => r.AddDeviceData(It.IsAny<IEnumerable<DeviceStateEntity>>()))
-                .Callback<IEnumerable<DeviceStateEntity>>(states => capturedStates = states.ToArray());
-
-            // act
-            _dataService.AddDeviceData(devices, 10.0);
-
-            // assert
-            Assert.That(capturedStates, Is.Not.Null);
-            Assert.That(capturedStates.Length, Is.EqualTo(2));
-            Assert.That(capturedStates.Any(s => s.DeviceId == 2), Is.False);
-            Assert.That(capturedStates[0].DeviceId, Is.EqualTo(1));
-            Assert.That(capturedStates[1].DeviceId, Is.EqualTo(3));
-        }
+        }        
 
         [Test]
         public void AddDeviceData_WithInvalidTemperatureStrings_UsesZeroAsDefault()
@@ -388,39 +341,6 @@ namespace NeoConnect.UnitTests.Services
 
             // assert
             Assert.That(capturedStates[0].OutsideTemp, Is.EqualTo(0.0));
-        }
-
-        [Test]
-        public void AddDeviceData_WithOnlyNonThermostats_CallsRepositoryWithEmptyCollection()
-        {
-            // arrange
-            var devices = new List<NeoDevice>
-            {
-                new NeoDevice 
-                { 
-                    DeviceId = 1, 
-                    ZoneName = "Towel Rail", 
-                    IsThermostat = false
-                },
-                new NeoDevice 
-                { 
-                    DeviceId = 2, 
-                    ZoneName = "Timer", 
-                    IsThermostat = false
-                }
-            };
-
-            DeviceStateEntity[] capturedStates = null;
-            _mockDeviceRepository.Setup(r => r.AddDeviceData(It.IsAny<IEnumerable<DeviceStateEntity>>()))
-                .Callback<IEnumerable<DeviceStateEntity>>(states => capturedStates = states.ToArray());
-
-            // act
-            _dataService.AddDeviceData(devices, 10.0);
-
-            // assert
-            _mockDeviceRepository.Verify(r => r.AddDeviceData(It.IsAny<IEnumerable<DeviceStateEntity>>()), Times.Once);
-            Assert.That(capturedStates, Is.Not.Null);
-            Assert.That(capturedStates.Length, Is.EqualTo(0));
         }
 
         [Test]

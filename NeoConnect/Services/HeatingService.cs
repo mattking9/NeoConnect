@@ -73,7 +73,7 @@ namespace NeoConnect
         /// <summary>
         /// Gets device heating history data for the given day
         /// </summary>
-        /// <param name="date">THe date to retrieve history data for.</param>
+        /// <param name="date">The date to retrieve history data for.</param>
         /// <returns></returns>
         public async Task<IEnumerable<DeviceHistory>> GetDeviceHistory(DateTime date)
         {
