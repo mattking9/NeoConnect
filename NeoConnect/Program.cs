@@ -17,7 +17,7 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
-builder.Services.AddSingleton<DeviceRepository>();
+builder.Services.AddSingleton<IDeviceRepository, DeviceRepository>();
 
 builder.Services.AddSingleton<IDataService, DataService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();

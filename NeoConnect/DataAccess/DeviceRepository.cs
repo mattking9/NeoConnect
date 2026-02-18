@@ -3,7 +3,7 @@ using Microsoft.Data.Sqlite;
 
 namespace NeoConnect.DataAccess
 {
-    public class DeviceRepository
+    public class DeviceRepository : IDeviceRepository
     {
         private readonly ILogger<DeviceRepository> _logger;
         private readonly IConfiguration _config;

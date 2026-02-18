@@ -2,12 +2,11 @@
 
 namespace NeoConnect
 {
-
     public class DataService : IDataService
     {
-        private readonly DeviceRepository _deviceRepository;        
+        private readonly IDeviceRepository _deviceRepository;        
 
-        public DataService(DeviceRepository deviceRepository)
+        public DataService(IDeviceRepository deviceRepository)
         {
             _deviceRepository = deviceRepository;
         }
