@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using System.Timers;
 using static System.Collections.Specialized.BitVector32;
@@ -16,8 +17,6 @@ namespace NeoConnect
         private readonly IEmailService _emailService;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly ILogger<RunImmersionAction> _logger;
-
-        private DateTime lastReachedTemperatureAt;
 
         private const decimal FeedInThreshold = 3.2M;
         private const decimal GenerationThreshold = 3.2M;
@@ -42,13 +41,6 @@ namespace NeoConnect
                 var solarService = scope.ServiceProvider.GetRequiredService<ISolarService>();
                 var immersionService = scope.ServiceProvider.GetRequiredService<IImmersionService>();
 
-                // Exit if immersion reached temperature within the last 3 hours
-                if (DateTime.Now < lastReachedTemperatureAt.AddHours(3))
-                {
-                    _logger.LogInformation("Exiting as Immersion reached temperature within the last 3 hours");
-                    return;
-                }
-
                 // Test level of exported power for 5 minutes to see if it remains above threshold
                 _logger.LogInformation("Testing exported power for 5 minutes");
                 var isStableExport = false;
@@ -58,7 +50,7 @@ namespace NeoConnect
                     isStableExport = (solarData.FeedInPower >= FeedInThreshold && solarData.SoC >= BatterySoCThreshold);
                     if (!isStableExport)
                     {
-                        _logger.LogInformation($"Exiting as Solar Export is below {FeedInThreshold}kW or Battery Charge is below {BatterySoCThreshold}%");
+                        _logger.LogInformation($"Solar Export is below {FeedInThreshold}kW or Battery Charge is below {BatterySoCThreshold}%");
                         break;
                     }
                     if (i < 5)
@@ -105,28 +97,25 @@ namespace NeoConnect
                                 if (success)
                                 {
                                     loop = false;
-
-                                    string[] messages = { "Immersion was turned OFF" };
-
+                                    
                                     if (isHeatingComplete)
                                     {
-                                        messages[0] += " (target temperature was reached)";
-                                        if (DateTime.Now > lastReachedTemperatureAt.AddHours(12))
-                                        {
-                                            // Turn off Gas-heated Hot Water for 12 hours
-                                            var heatingService = scope.ServiceProvider.GetRequiredService<IHeatingService>();
-                                            await heatingService.TurnOffHotWater(12, stoppingToken);
-                                            messages.Append("Gas Hot Water was turned OFF for 12 hours");
-                                        }
+                                        // Turn off Boiler-heated Hot Water for 8 hours
+                                        var heatingService = scope.ServiceProvider.GetRequiredService<IHeatingService>();
+                                        await heatingService.TurnOffHotWater(8, stoppingToken);
+                                        
+                                        await _emailService.SendInfoEmail([
+                                            "Immersion was turned OFF (target temperature was reached)",
+                                            "Boiler Hot Water was turned OFF for 8 hours"
+                                        ], stoppingToken);
 
-                                        lastReachedTemperatureAt = DateTime.Now;
+                                        _logger.LogInformation("Pausing Action for 3 hours");
+                                        Task.Delay(3 * 60 * 60 * 1000); // 3 hours
                                     }
                                     else
                                     {
-                                        messages[0] += " (process was terminated before target temperature was reached)";
-                                    }
-                                    
-                                    await _emailService.SendInfoEmail(messages, stoppingToken);
+                                        await _emailService.SendInfoEmail("Immersion was turned OFF (process was aborted before target temperature was reached)", stoppingToken);
+                                    }                                                                        
                                 }
                             }                            
                         }
