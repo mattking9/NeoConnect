@@ -12,5 +12,6 @@ namespace NeoConnect
         Task<IEnumerable<Schedule>> GetSchedules(CancellationToken stoppingToken);        
         Task SetTemperature(string deviceName, double temp, CancellationToken stoppingToken);
         Task RefreshDeviceList(CancellationToken stoppingToken);
+        Task TurnOffHotWater(int hours, CancellationToken stoppingToken);
     }
 }

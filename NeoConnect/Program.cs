@@ -26,15 +26,18 @@ builder.Services.AddScoped<IWeatherService, WeatherService>();
 builder.Services.AddScoped<IHeatingService, HeatingService>();
 builder.Services.AddSingleton<INeoHubService, NeoHubService>();
 builder.Services.AddSingleton<INeoConnectionFactory, NeoConnectionFactory>();
+builder.Services.AddSingleton<ISolarService, SolarService>();
+builder.Services.AddSingleton<IImmersionService, ImmersionService>();
 
 builder.Services.AddSingleton<BathroomBoostAction>();
 builder.Services.AddSingleton<GlobalHoldAction>();
 builder.Services.AddSingleton<ReportDataCollectionAction>();
-
+builder.Services.AddSingleton<RunImmersionAction>();
 
 builder.Services.AddHostedService<ScheduledWorker<BathroomBoostAction>>();
 builder.Services.AddHostedService<ScheduledWorker<GlobalHoldAction>>();
 builder.Services.AddHostedService<ScheduledWorker<ReportDataCollectionAction>>();
+builder.Services.AddHostedService<ScheduledWorker<RunImmersionAction>>();
 
 builder.Services.AddControllers();
 

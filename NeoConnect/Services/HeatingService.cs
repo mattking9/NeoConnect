@@ -217,6 +217,25 @@ namespace NeoConnect
                 }
             }
         }
+        
+        public async Task TurnOffHotWater(int hours, CancellationToken stoppingToken)
+        {            
+            const string HOT_WATER = "Hot Water";
+
+            using (var connection = await _neoHub.CreateConnection(stoppingToken))
+            {
+                var devices = await _neoHub.GetDevices(connection, stoppingToken);                
+                var timer = devices.FirstOrDefault(d => d.ZoneName == HOT_WATER);                
+
+                if (timer == null)
+                {
+                    _logger.LogInformation($"Device named '{HOT_WATER}' was not found.");
+                    return;
+                }
+                
+                await _neoHub.BoostOff(connection, [timer.ZoneName], hours, stoppingToken);
+            }
+        }
 
 
         /// <summary>

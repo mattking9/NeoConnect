@@ -14,6 +14,7 @@ namespace NeoConnect
         //Task SetPreheatDuration(INeoConnection connection, string zoneName, int maxPreheatDuration, CancellationToken cancellationToken);
         Task Hold(INeoConnection connection, string id, string[] devices, double temp, int hours, CancellationToken cancellationToken);
         Task Boost(INeoConnection connection, string[] devices, int hours, CancellationToken cancellationToken);
+        Task BoostOff(INeoConnection connection, string[] devices, int hours, CancellationToken cancellationToken);
         Task SetTemperature(INeoConnection connection, string deviceName, double temp, CancellationToken cancellationToken);
     }
 }

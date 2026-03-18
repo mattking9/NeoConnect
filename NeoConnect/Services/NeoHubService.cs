@@ -128,6 +128,15 @@ namespace NeoConnect
             await ReceiveMessage(connection, cancellationToken);
         }
 
+        public async Task BoostOff(INeoConnection connection, string[] devices, int hours, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation($"Turning off {string.Join(',', devices)} for {hours} hours.");
+
+            await SendMessage(connection, "BOOST_OFF", $"[{{'hours': {hours}, 'minutes': 0 }},[{string.Join(',', devices.Select(d => $"'{d}'"))}]]", _inc++, cancellationToken);
+
+            await ReceiveMessage(connection, cancellationToken);
+        }
+
         public ComfortLevel? GetNextComfortLevel(ProfileSchedule schedule, DateTime? relativeTo)
         {
             var date = relativeTo ?? DateTime.Now;

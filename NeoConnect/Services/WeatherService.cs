@@ -6,7 +6,6 @@ namespace NeoConnect
     public class WeatherService : IWeatherService
     {
         private readonly ILogger<WeatherService> _logger;
-        private readonly IConfiguration _config;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly string _uri;
         private readonly string _apiKey;
@@ -15,12 +14,11 @@ namespace NeoConnect
         public WeatherService(ILogger<WeatherService> logger, IConfiguration config, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
-            _config = config;
             _httpClientFactory = httpClientFactory;
 
-            _uri = _config.GetValue<string>("WeatherApi:Uri") ?? throw new ArgumentNullException("Config value for WeatherApi:Uri is required");
-            _apiKey = _config.GetValue<string>("WeatherApi:ApiKey") ?? throw new ArgumentNullException("Config value for WeatherApi:ApiKey is required");
-            _location = _config.GetValue<string>("WeatherApi:Location") ?? throw new ArgumentNullException("Config value for WeatherApi:Location is required");
+            _uri = config.GetValue<string>("WeatherApi:Uri") ?? throw new ArgumentNullException("Config value for WeatherApi:Uri is required");
+            _apiKey = config.GetValue<string>("WeatherApi:ApiKey") ?? throw new ArgumentNullException("Config value for WeatherApi:ApiKey is required");
+            _location = config.GetValue<string>("WeatherApi:Location") ?? throw new ArgumentNullException("Config value for WeatherApi:Location is required");
         }
 
         public async Task<Forecast> GetForecast(CancellationToken stoppingToken)
