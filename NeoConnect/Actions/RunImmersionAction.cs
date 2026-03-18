@@ -19,7 +19,6 @@ namespace NeoConnect
         private readonly ILogger<RunImmersionAction> _logger;
 
         private const decimal FeedInThreshold = 3.2M;
-        private const decimal GenerationThreshold = 3.2M;
         private const decimal BatterySoCThreshold = 90;
 
         public RunImmersionAction(IConfiguration config, IEmailService emailService, IServiceScopeFactory serviceScopeFactory, ILogger<RunImmersionAction> logger)
@@ -87,10 +86,10 @@ namespace NeoConnect
 
                             // Turn immersion OFF if any of the following are true:
                             // - Immersion is up to temperature
-                            // - Solar is generating less than 3.2kW
+                            // - Solar is generating less than is being consumed
                             // - Battery charge is below 90%
                             // - Job has been running for 2 hours (failsafe)
-                            if (isHeatingComplete || solarData.GeneratedPower <= GenerationThreshold || solarData.SoC <= BatterySoCThreshold || DateTime.Now >= startedAt.AddHours(2))
+                            if (isHeatingComplete || solarData.GeneratedPower < solarData.Load || solarData.SoC <= BatterySoCThreshold || DateTime.Now >= startedAt.AddHours(2))
                             {
                                 success = await immersionService.TurnOffDevice();
 
@@ -109,8 +108,8 @@ namespace NeoConnect
                                             "Boiler Hot Water was turned OFF for 8 hours"
                                         ], stoppingToken);
 
-                                        _logger.LogInformation("Pausing Action for 3 hours");
-                                        Task.Delay(3 * 60 * 60 * 1000); // 3 hours
+                                        _logger.LogInformation("Pausing Action for 2 hours");
+                                        await Task.Delay(3 * 60 * 60 * 1000); // 2 hours
                                     }
                                     else
                                     {
