@@ -52,7 +52,7 @@ namespace NeoConnect
                 // Test level of exported power for 5 minutes to see if it remains above threshold
                 _logger.LogInformation("Testing exported power for 5 minutes");
                 var isStableExport = false;
-                for (int i = 0; i < 6; i++)
+                for (int i = 0; i < 5; i++)
                 {
                     var solarData = await solarService.GetRealtimeData();
                     isStableExport = (solarData.FeedInPower >= FeedInThreshold && solarData.SoC >= BatterySoCThreshold);
@@ -61,7 +61,7 @@ namespace NeoConnect
                         _logger.LogInformation($"Exiting as Solar Export is below {FeedInThreshold}kW or Battery Charge is below {BatterySoCThreshold}%");
                         break;
                     }
-                    if (i < 6)
+                    if (i < 5)
                     {
                         await Task.Delay(60 * 1000);
                     }
@@ -106,31 +106,27 @@ namespace NeoConnect
                                 {
                                     loop = false;
 
-                                    string message;
+                                    string[] messages = { "Immersion was turned OFF" };
 
                                     if (isHeatingComplete)
-                                    {                                                                                
+                                    {
+                                        messages[0] += " (target temperature was reached)";
                                         if (DateTime.Now > lastReachedTemperatureAt.AddHours(12))
                                         {
                                             // Turn off Gas-heated Hot Water for 12 hours
                                             var heatingService = scope.ServiceProvider.GetRequiredService<IHeatingService>();
                                             await heatingService.TurnOffHotWater(12, stoppingToken);
-                                            message = "Immersion was turned OFF after reaching target temperature. Gas Hot Water was also turned OFF for 12 hours";
-                                        }
-                                        else
-                                        {
-                                            message = "Immersion was turned OFF after reaching target temperature.";
+                                            messages.Append("Gas Hot Water was turned OFF for 12 hours");
                                         }
 
                                         lastReachedTemperatureAt = DateTime.Now;
                                     }
                                     else
                                     {
-                                        message = "Immersion was turned OFF before reaching target temperature.";
+                                        messages[0] += " (process was terminated before target temperature was reached)";
                                     }
-
-                                    _logger.LogInformation(message);
-                                    await _emailService.SendInfoEmail(message, stoppingToken);
+                                    
+                                    await _emailService.SendInfoEmail(messages, stoppingToken);
                                 }
                             }                            
                         }
