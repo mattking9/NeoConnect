@@ -106,7 +106,7 @@ namespace NeoConnect
                                 ], stoppingToken);
 
                                 _logger.LogInformation("Pausing Action for 2 hours");
-                                await Task.Delay(3 * 60 * 60 * 1000); // 2 hours
+                                await Task.Delay(2 * 60 * 60 * 1000); // 2 hours
                             }
                             else
                             {

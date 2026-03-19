@@ -5,13 +5,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.UseStaticWebAssets();
 
-builder.Services.AddLogging(logging =>
+var inMemoryLoggerProvider = new InMemoryLoggerProvider(maxLogCount: 1000);
+builder.Services.AddSingleton(inMemoryLoggerProvider);
+
+builder.Services.AddLogging(logging => {
     logging.AddSimpleConsole(options =>
     {
         options.SingleLine = true;
         options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
-    })
-);
+    });
+    logging.AddProvider(inMemoryLoggerProvider);
+});
 
 builder.Services.AddHttpClient();
 

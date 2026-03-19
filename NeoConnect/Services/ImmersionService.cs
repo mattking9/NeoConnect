@@ -120,7 +120,7 @@ namespace NeoConnect
                     {
                         WriteIndented = true
                     };
-                    _logger.LogTrace($"Tuya Response: {JsonSerializer.Serialize(responseContent, options)}");
+                    _logger.LogDebug($"Tuya Response: {JsonSerializer.Serialize(responseContent, options)}");
                 }
 
                 if (!responseContent.Success)
