@@ -6,15 +6,19 @@ using System.Text.RegularExpressions;
 namespace NeoConnect
 {
     public class SolarService : ISolarService
-    {
-        //private static readonly Regex _timeRegex = new Regex(@"^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2}) (?<hour>\d{2}):(?<minute>\d{2}):(?<second>\d{2}) (?<timezoneAbbreviation>\w+)(?<offsetSign>[-+])(?<offsetHours>\d{2})(?<offsetMinutes>\d{2})$", RegexOptions.Compiled);
-
+    {        
         private readonly ILogger<SolarService> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
 
         private readonly string _token;
         private readonly string _deviceSerialNr;
         private readonly string _host;
+
+        // Solar Variables
+        private const string GenerationPower = "generationPower";
+        private const string FeedinPower = "feedinPower";
+        private const string SoC = "SoC";
+        private const string LoadPower = "loadsPower";
 
         public SolarService(IConfiguration configuration, ILogger<SolarService> logger, IHttpClientFactory httpClientFactory)
         {
@@ -37,10 +41,10 @@ namespace NeoConnect
                         _deviceSerialNr,
                     },
                     variables = new string[] {
-                        "generationPower",
-                        "feedinPower",
-                        "SoC",
-                        "loadsPower"
+                        GenerationPower,
+                        FeedinPower,
+                        SoC,
+                        LoadPower
                     }
                 });
 
@@ -66,13 +70,13 @@ namespace NeoConnect
                         throw new Exception("Unable to succesfully deserialize the response into a FoxEssApiResponse object.");
                     }
 
-                    if (_logger.IsEnabled(LogLevel.Trace))
+                    if (_logger.IsEnabled(LogLevel.Debug))
                     {
                         var options = new JsonSerializerOptions
                         {
                             WriteIndented = true
                         };
-                        _logger.LogTrace($"Response: {JsonSerializer.Serialize(responseContent, options)}");
+                        _logger.LogDebug($"FoxESS Response: {JsonSerializer.Serialize(responseContent, options)}");
                     }
 
                     if (responseContent.Errno != 0)
@@ -83,11 +87,10 @@ namespace NeoConnect
                     var result = responseContent.Result[0];
                     return new SolarData
                     {
-                        //Timestamp = ParseDateTime(result.Time),
-                        GeneratedPower = result.Datas.Find(d => d.Variable == "generationPower").Value,
-                        FeedInPower = result.Datas.Find(d => d.Variable == "feedinPower").Value,
-                        SoC = result.Datas.Find(d => d.Variable == "SoC").Value,
-                        Load = result.Datas.Find(d => d.Variable == "loadsPower").Value,                        
+                        GeneratedPower = result.Datas.Find(d => d.Variable == GenerationPower).Value,
+                        FeedInPower = result.Datas.Find(d => d.Variable == FeedinPower).Value,
+                        SoC = result.Datas.Find(d => d.Variable == SoC).Value,
+                        Load = result.Datas.Find(d => d.Variable == LoadPower).Value,                        
                     };
                 }
                 else
@@ -124,23 +127,6 @@ namespace NeoConnect
                 // Output the MD5 hash
                 return sb.ToString();
             }
-        }
-
-        //public static DateTime ParseDateTime(string value)
-        //{
-        //    var match = _timeRegex.Match(value);
-        //    if (match.Success)
-        //    {
-        //        int year = int.Parse(match.Groups["year"].Value);
-        //        int month = int.Parse(match.Groups["month"].Value);
-        //        int day = int.Parse(match.Groups["day"].Value);
-        //        int hour = int.Parse(match.Groups["hour"].Value);
-        //        int minute = int.Parse(match.Groups["minute"].Value);
-        //        int second = int.Parse(match.Groups["second"].Value);
-
-        //        return new DateTime(year, month, day, hour, minute, second, DateTimeKind.Local);
-        //    }
-        //    else throw new FormatException("The time string is not in the expected format.");
-        //}
+        }        
     }
 }

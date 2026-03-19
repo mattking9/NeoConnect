@@ -61,63 +61,58 @@ namespace NeoConnect
                 if (isStableExport)
                 {
                     _logger.LogInformation("Solar Export thresholds met"); 
-                    var success = await immersionService.TurnOnDevice();
-
-                    if (success)
-                    {
-                        await _emailService.SendInfoEmail("Immersion was turned ON.", stoppingToken);
-
-                        _logger.LogInformation("Starting Solar Output Monitoring loop");
-
-                        var startedAt = DateTime.Now;
-                        var loop = true;                        
-
-                        while (loop && !stoppingToken.IsCancellationRequested)
-                        {
-                            // wait 3 minutes before executing
-                            await Task.Delay(3 * 60 * 1000);
-
-                            _logger.LogInformation("Monitoring Solar Output");
-                                                        
-                            var solarData = await solarService.GetRealtimeData();
-
-                            // we assume immersion has reached target temperature if load is less than the power it draws
-                            var isHeatingComplete = solarData.Load < 2.8M;                            
-
-                            // Turn immersion OFF if any of the following are true:
-                            // - Immersion is up to temperature
-                            // - Solar is generating less than is being consumed
-                            // - Battery charge is below 90%
-                            // - Job has been running for 2 hours (failsafe)
-                            if (isHeatingComplete || solarData.GeneratedPower < solarData.Load || solarData.SoC <= BatterySoCThreshold || DateTime.Now >= startedAt.AddHours(2))
-                            {
-                                success = await immersionService.TurnOffDevice();
-
-                                if (success)
-                                {
-                                    loop = false;
-                                    
-                                    if (isHeatingComplete)
-                                    {
-                                        // Turn off Boiler-heated Hot Water for 8 hours
-                                        var heatingService = scope.ServiceProvider.GetRequiredService<IHeatingService>();
-                                        await heatingService.TurnOffHotWater(8, stoppingToken);
+                    
+                    await immersionService.TurnOnDevice();
                                         
-                                        await _emailService.SendInfoEmail([
-                                            "Immersion was turned OFF (target temperature was reached)",
-                                            "Boiler Hot Water was turned OFF for 8 hours"
-                                        ], stoppingToken);
+                    await _emailService.SendInfoEmail("Immersion was turned ON.", stoppingToken);
 
-                                        _logger.LogInformation("Pausing Action for 2 hours");
-                                        await Task.Delay(3 * 60 * 60 * 1000); // 2 hours
-                                    }
-                                    else
-                                    {
-                                        await _emailService.SendInfoEmail("Immersion was turned OFF (process was aborted before target temperature was reached)", stoppingToken);
-                                    }                                                                        
-                                }
-                            }                            
-                        }
+                    _logger.LogInformation("Starting Solar Output Monitoring loop");
+
+                    var startedAt = DateTime.Now;
+                    var loop = true;                        
+
+                    while (loop && !stoppingToken.IsCancellationRequested)
+                    {
+                        // wait 3 minutes before executing
+                        await Task.Delay(3 * 60 * 1000);
+
+                        _logger.LogInformation("Monitoring Solar Output");
+                                                        
+                        var solarData = await solarService.GetRealtimeData();
+
+                        // we assume immersion has reached target temperature if load is less than the power it draws
+                        var isHeatingComplete = solarData.Load < 2.8M;                            
+
+                        // Turn immersion OFF if any of the following are true:
+                        // - Immersion is up to temperature
+                        // - Solar is generating less than is being consumed
+                        // - Battery charge is below 90%
+                        // - Job has been running for 2 hours (failsafe)
+                        if (isHeatingComplete || solarData.GeneratedPower < solarData.Load || solarData.SoC <= BatterySoCThreshold || DateTime.Now >= startedAt.AddHours(2))
+                        {
+                            await immersionService.TurnOffDevice();
+                                
+                            loop = false;
+                                    
+                            if (isHeatingComplete)
+                            {
+                                // Turn off Boiler-heated Hot Water for 8 hours
+                                var heatingService = scope.ServiceProvider.GetRequiredService<IHeatingService>();
+                                await heatingService.TurnOffHotWater(8, stoppingToken);
+                                        
+                                await _emailService.SendInfoEmail([
+                                    "Immersion was turned OFF (target temperature was reached)",
+                                    "Boiler Hot Water was turned OFF for 8 hours"
+                                ], stoppingToken);
+
+                                _logger.LogInformation("Pausing Action for 2 hours");
+                                await Task.Delay(3 * 60 * 60 * 1000); // 2 hours
+                            }
+                            else
+                            {
+                                await _emailService.SendInfoEmail("Immersion was turned OFF (process was aborted before target temperature was reached)", stoppingToken);
+                            }                                
+                        }                            
                     }
                 }
             }

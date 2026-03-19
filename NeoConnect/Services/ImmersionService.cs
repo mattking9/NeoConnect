@@ -24,16 +24,16 @@ namespace NeoConnect
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task<bool> TurnOnDevice()
+        public async Task TurnOnDevice()
         {
             _logger.LogInformation("Turning ON Immersion");
-            return await TurnSwitchOnOrOff(true);
+            await TurnSwitchOnOrOff(true);
         }
 
-        public async Task<bool> TurnOffDevice()
+        public async Task TurnOffDevice()
         {
             _logger.LogInformation("Turning OFF Immersion");
-            return await TurnSwitchOnOrOff(false);
+            await TurnSwitchOnOrOff(false);
         }
 
         private async Task<string> GetAccessToken(HttpClient client)
@@ -67,7 +67,7 @@ namespace NeoConnect
                       .GetString()!;
         }
 
-        private async Task<bool> TurnSwitchOnOrOff(bool state)
+        private async Task TurnSwitchOnOrOff(bool state)
         {
             using var client = _httpClientFactory.CreateClient();
 
@@ -112,19 +112,21 @@ namespace NeoConnect
                 if (responseContent == null)
                 {
                     throw new Exception("Unable to succesfully deserialize the response into a TuyaApiResponse object.");
-                }
-                _logger.LogDebug("Received response from Tuya API succesfully.");
+                }                
 
-                if (_logger.IsEnabled(LogLevel.Trace))
+                if (_logger.IsEnabled(LogLevel.Debug))
                 {
                     var options = new JsonSerializerOptions
                     {
                         WriteIndented = true
                     };
-                    _logger.LogTrace($"Response: {JsonSerializer.Serialize(responseContent, options)}");
+                    _logger.LogTrace($"Tuya Response: {JsonSerializer.Serialize(responseContent, options)}");
                 }
 
-                return responseContent.Success;
+                if (!responseContent.Success)
+                {
+                    throw new HttpRequestException($"Failed to turn {(state ? "ON" : "OFF")} Immersion switch. API call completed but state was not changed.");
+                }
             }
             else
             {
