@@ -332,6 +332,7 @@ async function loadNav() {
             <div class="nav-item px-3"><a class="navlink" href="devices.html"><span class="fa fa-thermometer-half"></span>Devices</a></div>
             <div class="nav-item px-3"><a class="navlink" href="schedules.html"><span class="fa fa-calendar-o"></span>Schedules</a></div>
             <div class="nav-item px-3"><a class="navlink" href="history.html"><span class="fa fa-line-chart"></span>History</a></div>
+            <div class="nav-item px-3"><a class="navlink" href="logs.html"><span class="fa fa-file-text-o"></span>Logs</a></div>
         </div>
         <a href="javascript:void(0);" class="bars" onclick="toggleMenu()">
             <i class="fa fa-bars"></i>
@@ -378,4 +379,116 @@ async function setTemp(deviceName, temp) {
 
     //reload
     await loadDevices(true);
+}
+
+async function loadLogs() {
+    const logsContainer = document.getElementById('logs-container');
+    logsContainer.innerHTML = '<p class="loading">Loading logs...</p>';
+
+    try {
+        const logLevelFilter = document.getElementById('logLevelFilter');
+        const logCountFilter = document.getElementById('logCountFilter');
+        const logSortOrder = document.getElementById('logSortOrder');
+        const level = logLevelFilter ? logLevelFilter.value : '';
+        const count = logCountFilter ? logCountFilter.value : '50';
+        const sortOrder = logSortOrder ? logSortOrder.value : 'asc';
+
+        let fetchUrl = `${url}/Logs?count=${count}`;
+        if (level) {
+            fetchUrl += `&level=${level}`;
+        }
+
+        const response = await fetch(fetchUrl);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        let logs = await response.json();
+
+        if (logs.length === 0) {
+            logsContainer.innerHTML = '<p>No logs found.</p>';
+            return;
+        }
+
+        logs.sort((a, b) => {
+            const dateA = new Date(a.timestamp);
+            const dateB = new Date(b.timestamp);
+            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        });
+
+        let tableHtml = `
+            <div style="max-height:75vh;overflow-y:scroll">
+            <table class="table table-striped">                
+                <tbody>`;
+
+        logs.forEach(log => {
+            let logLevelClass = '';
+            switch(log.logLevel.toLowerCase()) {
+                case 'error':
+                    logLevelClass = 'table-danger';
+                    break;
+                case 'warning':
+                    logLevelClass = 'table-warning';
+                    break;
+                case 'information':
+                    logLevelClass = '';
+                    break;
+                case 'debug':
+                    logLevelClass = 'table-info';
+                    break;
+            }
+
+            const timestamp = new Date(log.timestamp).toLocaleString('en-GB');
+
+            tableHtml += `
+                <tr class="${logLevelClass}">
+                    <td>${timestamp}</td>                    
+                    <td>
+                        ${log.message}
+                        ${log.exception ? `<br/><small class="text-danger">Exception: ${log.exception}</small>` : ''}
+                    </td>
+                    <td>${log.category}</td>
+                </tr>`;
+        });
+
+        tableHtml += `
+                </tbody>
+            </table>
+            </div>`;
+
+        logsContainer.innerHTML = tableHtml;
+
+    } catch (error) {
+        logsContainer.innerHTML = `<p class="error">Error loading logs: ${error.message}</p>`;
+        console.error('Error:', error);
+    }
+}
+
+async function clearLogs() {
+    const btn = document.getElementById('clearLogsBtn');
+
+    if (!confirm('Are you sure you want to clear all logs?')) {
+        return;
+    }
+
+    btn.disabled = true;
+
+    try {
+        const response = await fetch(`${url}/Logs`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        await loadLogs();
+
+    } catch (error) {
+        alert(`Error clearing logs: ${error.message}`);
+        console.error('Error:', error);
+    } finally {
+        btn.disabled = false;
+    }
 }

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="css/site.css" rel="stylesheet" />
+    <title>NeoConnect - Logs</title>
+</head>
+
+<body>
+
+    <nav id="nav-container"></nav>
+
+    <main class="content px-4">
+        <h2>Application Logs</h2>
+        <div class="row mb-3">
+            <div class="col-4">                
+                <select id="logLevelFilter" class="form-select" onchange="loadLogs()">
+                    <option value="">All Levels</option>
+                    <option value="Information">Information</option>
+                    <option value="Warning">Warning</option>
+                    <option value="Error">Error</option>
+                    <option value="Debug">Debug</option>
+                </select>
+            </div>
+            <div class="col-4">                
+                <select id="logCountFilter" class="form-select" onchange="loadLogs()">
+                    <option value="50" selected>Last 50</option>
+                    <option value="100">Last 100</option>
+                    <option value="500">Last 500</option>
+                    <option value="1000">Last 1000</option>
+                </select>
+            </div>
+            <div class="col-4">                
+                <select id="logSortOrder" class="form-select" onchange="loadLogs()">
+                    <option value="asc" selected>Oldest First</option>
+                    <option value="desc">Newest First</option>
+                </select>
+            </div>
+        </div>
+        <div class="mb-3">
+            <button id="clearLogsBtn" class="btn btn-danger" onclick="clearLogs()">
+                <i class="fa fa-trash"></i> Clear Logs
+            </button>
+            <button class="btn btn-secondary" onclick="loadLogs()">
+                <i class="fa fa-refresh"></i> Refresh
+            </button>
+        </div>
+        <div id="logs-container"></div>
+    </main>
+
+    <script src="script/site.js"></script>
+    <script>
+        loadNav();
+        window.onload = loadLogs;
+    </script>
+</body>
+
+</html>
