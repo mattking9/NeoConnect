@@ -571,119 +571,56 @@ namespace NeoConnect.UnitTests
             _mockEmailService.Verify(e => e.SendInfoEmail(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
-        [Test]
-        public async Task ReduceSetTempWhenExternalTempIsWarm_WhenBelowThresholdAndSunny_LogsAndReturns()
-        {
-            // arrange
-            var forecastDay = new ForecastDay()
-            {
-                Hour = Enumerable.Range(0, 24).Select(h => new ForecastHour() 
-                { 
-                    Temp = 5, 
-                    Condition = new ForecastCondition() { Text = "Sunny" } 
-                }).ToList()
-            };
-
-            // act
-            await _heatingService.ReduceSetTempWhenExternalTempIsWarm(forecastDay, _cts.Token);
-
-            // assert
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Skipping as external temperature") && v.ToString().Contains("below threshold 7c")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
-
-            _mockNeoHubService.Verify(n => n.Hold(It.IsAny<INeoConnection>(), It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<double>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        }
 
         [Test]
-        public async Task ReduceSetTempWhenExternalTempIsWarm_WhenBelowThresholdAndNotSunny_LogsAndReturns()
+        public async Task GlobalHold_WithActiveThermostats_AppliesHoldToAllDevices()
         {
             // arrange
-            var forecastDay = new ForecastDay()
-            {
-                Hour = Enumerable.Range(0, 24).Select(h => new ForecastHour() 
-                { 
-                    Temp = 10, 
-                    Condition = new ForecastCondition() { Text = "Cloudy" } 
-                }).ToList()
-            };
-
-            // act
-            await _heatingService.ReduceSetTempWhenExternalTempIsWarm(forecastDay, _cts.Token);
-
-            // assert
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Skipping as external temperature") && v.ToString().Contains("below threshold 12c")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
-
-            _mockNeoHubService.Verify(n => n.Hold(It.IsAny<INeoConnection>(), It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<double>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        }
-
-        [Test]
-        public async Task ReduceSetTempWhenExternalTempIsWarm_WhenAboveThresholdAndSunny_HoldsDevicesAndSendsEmail()
-        {
-            // arrange
-            var forecastDay = new ForecastDay()
-            {
-                Hour = Enumerable.Range(0, 24).Select(h => new ForecastHour() 
-                { 
-                    Temp = 8, 
-                    Condition = new ForecastCondition() { Text = "Sunny" } 
-                }).ToList()
-            };
-
             var devices = new List<NeoDevice>()
             {
                 new() { DeviceId = 1, ZoneName = "Living Room", IsThermostat = true, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "20" },
-                new() { DeviceId = 2, ZoneName = "Bedroom", IsThermostat = true, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "19" }
+                new() { DeviceId = 2, ZoneName = "Bedroom", IsThermostat = true, IsOffline = false, ActiveProfile = 2, IsStandby = false, SetTemp = "19" },
+                new() { DeviceId = 3, ZoneName = "Kitchen", IsThermostat = true, IsOffline = false, ActiveProfile = 3, IsStandby = false, SetTemp = "21" }
             };
 
             _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
 
+            var adjustment = -1.0;
+            var holdHours = 2;
+
             // act
-            await _heatingService.ReduceSetTempWhenExternalTempIsWarm(forecastDay, _cts.Token);
+            await _heatingService.GlobalHold(adjustment, holdHours, _cts.Token);
 
             // assert
             _mockNeoHubService.Verify(n => n.Hold(
-                It.IsAny<INeoConnection>(), 
+                It.IsAny<INeoConnection>(),
                 "ReduceWhenWarm",
-                It.Is<string[]>(zones => zones.Contains("Living Room")), 
-                19.5, 
-                1, 
+                It.Is<string[]>(zones => zones.Contains("Living Room")),
+                19.0,
+                holdHours,
                 It.IsAny<CancellationToken>()), Times.Once);
 
             _mockNeoHubService.Verify(n => n.Hold(
-                It.IsAny<INeoConnection>(), 
+                It.IsAny<INeoConnection>(),
                 "ReduceWhenWarm",
-                It.Is<string[]>(zones => zones.Contains("Bedroom")), 
-                18.5, 
-                1, 
+                It.Is<string[]>(zones => zones.Contains("Bedroom")),
+                18.0,
+                holdHours,
                 It.IsAny<CancellationToken>()), Times.Once);
 
-            _mockEmailService.Verify(e => e.SendInfoEmail(
-                It.Is<IEnumerable<string>>(msgs => msgs.Any(m => m.Contains("Holding") && m.Contains("Living Room"))), 
+            _mockNeoHubService.Verify(n => n.Hold(
+                It.IsAny<INeoConnection>(),
+                "ReduceWhenWarm",
+                It.Is<string[]>(zones => zones.Contains("Kitchen")),
+                20.0,
+                holdHours,
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
-        public async Task ReduceSetTempWhenExternalTempIsWarm_WhenAboveThresholdAndNotSunny_HoldsDevicesAndSendsEmail()
+        public async Task GlobalHold_WithPositiveAdjustment_IncreasesTemperatures()
         {
             // arrange
-            var forecastDay = new ForecastDay()
-            {
-                Hour = Enumerable.Range(0, 24).Select(h => new ForecastHour() 
-                { 
-                    Temp = 13, 
-                    Condition = new ForecastCondition() { Text = "Cloudy" } 
-                }).ToList()
-            };
-
             var devices = new List<NeoDevice>()
             {
                 new() { DeviceId = 1, ZoneName = "Living Room", IsThermostat = true, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "20" }
@@ -691,36 +628,53 @@ namespace NeoConnect.UnitTests
 
             _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
 
+            var adjustment = 2.5;
+            var holdHours = 3;
+
             // act
-            await _heatingService.ReduceSetTempWhenExternalTempIsWarm(forecastDay, _cts.Token);
+            await _heatingService.GlobalHold(adjustment, holdHours, _cts.Token);
 
             // assert
             _mockNeoHubService.Verify(n => n.Hold(
-                It.IsAny<INeoConnection>(), 
+                It.IsAny<INeoConnection>(),
                 "ReduceWhenWarm",
-                It.Is<string[]>(zones => zones.Contains("Living Room")), 
-                19.5, 
-                1, 
-                It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockEmailService.Verify(e => e.SendInfoEmail(
-                It.IsAny<IEnumerable<string>>(), 
+                It.Is<string[]>(zones => zones.Contains("Living Room")),
+                22.5,
+                holdHours,
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
-        public async Task ReduceSetTempWhenExternalTempIsWarm_FiltersOutOfflineDevices()
+        public async Task GlobalHold_WithNegativeAdjustment_DecreasesTemperatures()
         {
             // arrange
-            var forecastDay = new ForecastDay()
+            var devices = new List<NeoDevice>()
             {
-                Hour = Enumerable.Range(0, 24).Select(h => new ForecastHour() 
-                { 
-                    Temp = 8, 
-                    Condition = new ForecastCondition() { Text = "Sunny" } 
-                }).ToList()
+                new() { DeviceId = 1, ZoneName = "Living Room", IsThermostat = true, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "20" }
             };
 
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+
+            var adjustment = -3.0;
+            var holdHours = 1;
+
+            // act
+            await _heatingService.GlobalHold(adjustment, holdHours, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.Hold(
+                It.IsAny<INeoConnection>(),
+                "ReduceWhenWarm",
+                It.Is<string[]>(zones => zones.Contains("Living Room")),
+                17.0,
+                holdHours,
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test]
+        public async Task GlobalHold_FiltersOutOfflineDevices()
+        {
+            // arrange
             var devices = new List<NeoDevice>()
             {
                 new() { DeviceId = 1, ZoneName = "Living Room", IsThermostat = true, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "20" },
@@ -729,122 +683,250 @@ namespace NeoConnect.UnitTests
 
             _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
 
+            var adjustment = -1.0;
+            var holdHours = 2;
+
             // act
-            await _heatingService.ReduceSetTempWhenExternalTempIsWarm(forecastDay, _cts.Token);
+            await _heatingService.GlobalHold(adjustment, holdHours, _cts.Token);
 
             // assert
             _mockNeoHubService.Verify(n => n.Hold(
-                It.IsAny<INeoConnection>(), 
+                It.IsAny<INeoConnection>(),
                 It.IsAny<string>(),
-                It.Is<string[]>(zones => zones.Contains("Living Room")), 
-                It.IsAny<double>(), 
-                It.IsAny<int>(), 
+                It.Is<string[]>(zones => zones.Contains("Living Room")),
+                It.IsAny<double>(),
+                It.IsAny<int>(),
                 It.IsAny<CancellationToken>()), Times.Once);
 
             _mockNeoHubService.Verify(n => n.Hold(
-                It.IsAny<INeoConnection>(), 
+                It.IsAny<INeoConnection>(),
                 It.IsAny<string>(),
-                It.Is<string[]>(zones => zones.Contains("Bedroom")), 
-                It.IsAny<double>(), 
-                It.IsAny<int>(), 
+                It.Is<string[]>(zones => zones.Contains("Bedroom")),
+                It.IsAny<double>(),
+                It.IsAny<int>(),
                 It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Test]
-        public async Task LogDeviceStatuses_WithActiveDevices_WritesToDatabase()
+        public async Task GlobalHold_FiltersOutStandbyDevices()
         {
             // arrange
             var devices = new List<NeoDevice>()
             {
-                new() { DeviceId = 1, ZoneName = "Living Room", IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "20", ActualTemp = "19" },
-                new() { DeviceId = 2, ZoneName = "Bedroom", IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "19", ActualTemp = "18" }
+                new() { DeviceId = 1, ZoneName = "Living Room", IsThermostat = true, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "20" },
+                new() { DeviceId = 2, ZoneName = "Bedroom", IsThermostat = true, IsOffline = false, ActiveProfile = 1, IsStandby = true, SetTemp = "19" }
             };
 
             _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
 
-            // act
-            await _heatingService.LogDeviceStatuses(_cts.Token);
-
-            // assert
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Writing device statuses to database")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
-
-            _mockDataService.Verify(d => d.AddDeviceData(
-                It.Is<IEnumerable<NeoDevice>>(devs => devs.Count() == 2), 
-                0), Times.Once);
-        }
-
-        [Test]
-        public async Task LogDeviceStatuses_FiltersOutOfflineAndStandbyDevices()
-        {
-            // arrange
-            var devices = new List<NeoDevice>()
-            {
-                new() { DeviceId = 1, ZoneName = "Living Room", IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "20" },
-                new() { DeviceId = 2, ZoneName = "Bedroom", IsOffline = true, ActiveProfile = 1, IsStandby = false, SetTemp = "19" },
-                new() { DeviceId = 3, ZoneName = "Kitchen", IsOffline = false, ActiveProfile = 1, IsStandby = true, SetTemp = "18" },
-                new() { DeviceId = 4, ZoneName = "Office", IsOffline = false, ActiveProfile = 0, IsStandby = false, SetTemp = "17" }
-            };
-
-            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+            var adjustment = -1.0;
+            var holdHours = 2;
 
             // act
-            await _heatingService.LogDeviceStatuses(_cts.Token);
+            await _heatingService.GlobalHold(adjustment, holdHours, _cts.Token);
 
             // assert
-            _mockDataService.Verify(d => d.AddDeviceData(
-                It.Is<IEnumerable<NeoDevice>>(devs => devs.Count() == 1 && devs.First().ZoneName == "Living Room"), 
-                0), Times.Once);
-        }
-
-        [Test]
-        public async Task RefreshDeviceList_WritesAllDevicesToDatabase()
-        {
-            // arrange
-            var devices = new List<NeoDevice>()
-            {
-                new() { DeviceId = 1, ZoneName = "Living Room" },
-                new() { DeviceId = 2, ZoneName = "Bedroom" },
-                new() { DeviceId = 3, ZoneName = "Kitchen" }
-            };
-
-            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
-
-            // act
-            await _heatingService.RefreshDeviceList(_cts.Token);
-
-            // assert
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Writing device list to database")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
-
-            _mockDataService.Verify(d => d.RefreshDeviceList(
-                It.Is<List<NeoDevice>>(devs => devs.Count == 3)), Times.Once);
-        }
-
-        [Test]
-        public async Task SetTemperature_CallsNeoHubServiceWithCorrectParameters()
-        {
-            // arrange
-            var deviceName = "Living Room";
-            var temperature = 21.5;
-
-            // act
-            await _heatingService.SetTemperature(deviceName, temperature, _cts.Token);
-
-            // assert
-            _mockNeoHubService.Verify(n => n.SetTemperature(
-                It.IsAny<INeoConnection>(), 
-                deviceName, 
-                temperature, 
+            _mockNeoHubService.Verify(n => n.Hold(
+                It.IsAny<INeoConnection>(),
+                It.IsAny<string>(),
+                It.Is<string[]>(zones => zones.Contains("Living Room")),
+                It.IsAny<double>(),
+                It.IsAny<int>(),
                 It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockNeoHubService.Verify(n => n.Hold(
+                It.IsAny<INeoConnection>(),
+                It.IsAny<string>(),
+                It.Is<string[]>(zones => zones.Contains("Bedroom")),
+                It.IsAny<double>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Test]
+        public async Task GlobalHold_FiltersOutDevicesWithZeroActiveProfile()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsThermostat = true, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "20" },
+                new() { DeviceId = 2, ZoneName = "Bedroom", IsThermostat = true, IsOffline = false, ActiveProfile = 0, IsStandby = false, SetTemp = "19" }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+
+            var adjustment = -1.0;
+            var holdHours = 2;
+
+            // act
+            await _heatingService.GlobalHold(adjustment, holdHours, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.Hold(
+                It.IsAny<INeoConnection>(),
+                It.IsAny<string>(),
+                It.Is<string[]>(zones => zones.Contains("Living Room")),
+                It.IsAny<double>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockNeoHubService.Verify(n => n.Hold(
+                It.IsAny<INeoConnection>(),
+                It.IsAny<string>(),
+                It.Is<string[]>(zones => zones.Contains("Bedroom")),
+                It.IsAny<double>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Test]
+        public async Task GlobalHold_FiltersOutNonThermostatDevices()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsThermostat = true, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "20" },
+                new() { DeviceId = 2, ZoneName = "Towel Rail", IsThermostat = false, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "19" }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+
+            var adjustment = -1.0;
+            var holdHours = 2;
+
+            // act
+            await _heatingService.GlobalHold(adjustment, holdHours, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.Hold(
+                It.IsAny<INeoConnection>(),
+                It.IsAny<string>(),
+                It.Is<string[]>(zones => zones.Contains("Living Room")),
+                It.IsAny<double>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockNeoHubService.Verify(n => n.Hold(
+                It.IsAny<INeoConnection>(),
+                It.IsAny<string>(),
+                It.Is<string[]>(zones => zones.Contains("Towel Rail")),
+                It.IsAny<double>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Test]
+        public async Task GlobalHold_WithNoValidDevices_DoesNotCallHold()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsThermostat = true, IsOffline = true, ActiveProfile = 1, IsStandby = false, SetTemp = "20" },
+                new() { DeviceId = 2, ZoneName = "Bedroom", IsThermostat = false, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "19" },
+                new() { DeviceId = 3, ZoneName = "Kitchen", IsThermostat = true, IsOffline = false, ActiveProfile = 0, IsStandby = false, SetTemp = "18" }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+
+            var adjustment = -1.0;
+            var holdHours = 2;
+
+            // act
+            await _heatingService.GlobalHold(adjustment, holdHours, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.Hold(
+                It.IsAny<INeoConnection>(),
+                It.IsAny<string>(),
+                It.IsAny<string[]>(),
+                It.IsAny<double>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Test]
+        public async Task GlobalHold_UsesCorrectHoldGroup()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsThermostat = true, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "20" }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+
+            var adjustment = -1.0;
+            var holdHours = 2;
+
+            // act
+            await _heatingService.GlobalHold(adjustment, holdHours, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.Hold(
+                It.IsAny<INeoConnection>(),
+                "ReduceWhenWarm",
+                It.IsAny<string[]>(),
+                It.IsAny<double>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test]
+        public async Task GlobalHold_WithZeroAdjustment_AppliesOriginalTemperatures()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsThermostat = true, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "20" }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+
+            var adjustment = 0.0;
+            var holdHours = 2;
+
+            // act
+            await _heatingService.GlobalHold(adjustment, holdHours, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.Hold(
+                It.IsAny<INeoConnection>(),
+                "ReduceWhenWarm",
+                It.Is<string[]>(zones => zones.Contains("Living Room")),
+                20.0,
+                holdHours,
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test]
+        public async Task GlobalHold_PassesCancellationTokenToNeoHub()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsThermostat = true, IsOffline = false, ActiveProfile = 1, IsStandby = false, SetTemp = "20" }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(devices);
+
+            var adjustment = -1.0;
+            var holdHours = 2;
+
+            // act
+            await _heatingService.GlobalHold(adjustment, holdHours, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.GetDevices(
+                It.IsAny<INeoConnection>(),
+                _cts.Token), Times.Once);
+
+            _mockNeoHubService.Verify(n => n.Hold(
+                It.IsAny<INeoConnection>(),
+                It.IsAny<string>(),
+                It.IsAny<string[]>(),
+                It.IsAny<double>(),
+                It.IsAny<int>(),
+                _cts.Token), Times.Once);
         }
     }
 }

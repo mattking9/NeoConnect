@@ -29,6 +29,8 @@ namespace NeoConnect
             _logger = logger;
         }
 
+        public string? Id => "run_immersion";
+
         public string? Name => "Run Immersion";
 
         public string? Schedule => _config["RunImmersionSchedule"];

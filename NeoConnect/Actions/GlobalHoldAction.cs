@@ -10,12 +10,18 @@ namespace NeoConnect
     {
         private readonly IConfiguration _config;
         private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly ILogger<GlobalHoldAction> _logger;
+        private readonly IEmailService _emailService;
 
-        public GlobalHoldAction(IConfiguration config, IServiceScopeFactory serviceScopeFactory)
+        public GlobalHoldAction(IConfiguration config, IServiceScopeFactory serviceScopeFactory, ILogger<GlobalHoldAction> logger, IEmailService emailService)
         {
             _config = config;
             _serviceScopeFactory = serviceScopeFactory;
+            _logger = logger;
+            _emailService = emailService;
         }
+
+        public string? Id => "global_hold";
 
         public string? Name => "Global Hold";
 
@@ -25,12 +31,25 @@ namespace NeoConnect
         {
             using (var scope = _serviceScopeFactory.CreateScope())
             {
-                var heatingService = scope.ServiceProvider.GetService<IHeatingService>();
-                var weatherService = scope.ServiceProvider.GetService<IWeatherService>();
+                var heatingService = scope.ServiceProvider.GetRequiredService<IHeatingService>();
+                var weatherService = scope.ServiceProvider.GetRequiredService<IWeatherService>();
 
                 var forecast = await weatherService.GetForecast(stoppingToken);
-                
-                await heatingService.ReduceSetTempWhenExternalTempIsWarm(forecast.ForecastDay[0], stoppingToken);
+
+                // get the temperature for the next hour
+                var forecastNextHour = forecast.ForecastDay[0].Hour[DateTime.Now.Hour < 23 ? DateTime.Now.Hour + 1 : 23];
+
+                var threshold = forecastNextHour.IsSunny ? 6.5 : 11;
+
+                if (forecastNextHour.Temp < threshold)
+                {
+                    _logger.LogInformation($"Skipping as forecast for next hour is {forecastNextHour.Temp}c ({forecastNextHour.Condition.Text}) which is below threshold {threshold}c");
+                    return;
+                }
+
+                await heatingService.GlobalHold(-0.5, 1, stoppingToken);
+
+                await _emailService.SendInfoEmail("Holding all devices down 0.5c for 1 hour", stoppingToken);
             }
         }             
     }

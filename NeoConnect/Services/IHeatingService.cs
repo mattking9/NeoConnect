@@ -4,7 +4,7 @@ namespace NeoConnect
 {
     public interface IHeatingService
     {
-        Task ReduceSetTempWhenExternalTempIsWarm(ForecastDay forecastToday, CancellationToken stoppingToken);
+        Task GlobalHold(double adjustment, int hours, CancellationToken stoppingToken);
         Task BoostTowelRailWhenBathroomIsCold(CancellationToken stoppingToken);
         Task LogDeviceStatuses(CancellationToken stoppingToken);
         Task<IEnumerable<Device>> GetDevices(bool includeAdvancedData, CancellationToken stoppingToken);

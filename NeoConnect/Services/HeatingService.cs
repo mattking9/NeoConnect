@@ -239,35 +239,24 @@ namespace NeoConnect
 
 
         /// <summary>
-        /// If it is X degrees or more when this method runs, it will turn all stats down by half a degree for 1 hour because the sun will provide additional warming during this time.
+        /// Adjust all stats by the adjustment amount.
         /// </summary>
-        /// <param name="forecastToday"></param>
+        /// <param name="adjustment"></param>
+        /// /// <param name="holdHours"></param>
         /// <param name="stoppingToken"></param>
         /// <returns></returns>
-        public async Task ReduceSetTempWhenExternalTempIsWarm(ForecastDay forecastToday, CancellationToken stoppingToken)
+        public async Task GlobalHold(double adjustment, int holdHours, CancellationToken stoppingToken)
         {            
-            // get the temperature for the next hour
-            var forecastNextHour = forecastToday.Hour[DateTime.Now.Hour < 23 ? DateTime.Now.Hour + 1 : 23];
-
-            var threshold = forecastNextHour.IsSunny ? 7 : 12;
-
-            if (forecastNextHour.Temp < threshold)
-            {
-                _logger.LogInformation($"Skipping as external temperature for next hour is expected to be {forecastNextHour.Temp}c which is below threshold {threshold}c");
-                return;
-            }
-
             using (var connection = await _neoHub.CreateConnection(stoppingToken))
             {
-                // fetch all the necessary data from the NeoHub
+                // fetch all the stats from the NeoHub
                 var devices = (await _neoHub.GetDevices(connection, stoppingToken)).Where(d => d.IsThermostat && !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);
 
                 var holdGroup = "ReduceWhenWarm";
                 foreach (var device in devices)
                 {
-                    await _neoHub.Hold(connection, holdGroup, [device.ZoneName], Convert.ToDouble(device.SetTemp) - 0.5, 1, stoppingToken);
-                }
-                await _emailService.SendInfoEmail(devices.Select(d => $"Holding {d.ZoneName} down 0.5c for 1 hour"), stoppingToken);
+                    await _neoHub.Hold(connection, holdGroup, [device.ZoneName], Convert.ToDouble(device.SetTemp) + adjustment, holdHours, stoppingToken);
+                }                
             }
         }
 

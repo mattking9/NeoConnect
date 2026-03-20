@@ -344,6 +344,10 @@ async function dataCollection() {
     runAction("data_collection", "dataCollectionBtn")
 }
 
+async function globalHold() {
+    runAction("global_hold", "globalHoldBtn")
+}
+
 async function runAction(actionName, btnId) {
     const btn = document.getElementById(btnId);
     btn.disabled = true;

@@ -17,6 +17,8 @@ namespace NeoConnect
             _serviceScopeFactory = serviceScopeFactory;
         }
 
+        public string? Id => "data_collection";
+
         public string? Name => "Report Data Collection";
 
         public string? Schedule => _config["ReportDataCollectionSchedule"];
@@ -25,7 +27,7 @@ namespace NeoConnect
         {            
             using (var scope = _serviceScopeFactory.CreateScope())
             {
-                var heatingService = scope.ServiceProvider.GetService<IHeatingService>();
+                var heatingService = scope.ServiceProvider.GetRequiredService<IHeatingService>();
                 
                 await heatingService.LogDeviceStatuses(stoppingToken);
             }

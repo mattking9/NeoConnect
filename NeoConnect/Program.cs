@@ -37,6 +37,10 @@ builder.Services.AddSingleton<BathroomBoostAction>();
 builder.Services.AddSingleton<GlobalHoldAction>();
 builder.Services.AddSingleton<ReportDataCollectionAction>();
 builder.Services.AddSingleton<RunImmersionAction>();
+builder.Services.AddScoped<IScheduledAction>(sp => sp.GetRequiredService<BathroomBoostAction>());
+builder.Services.AddScoped<IScheduledAction>(sp => sp.GetRequiredService<GlobalHoldAction>());
+builder.Services.AddScoped<IScheduledAction>(sp => sp.GetRequiredService<ReportDataCollectionAction>());
+builder.Services.AddScoped<IScheduledAction>(sp => sp.GetRequiredService<RunImmersionAction>());
 
 builder.Services.AddHostedService<ScheduledWorker<BathroomBoostAction>>();
 builder.Services.AddHostedService<ScheduledWorker<GlobalHoldAction>>();

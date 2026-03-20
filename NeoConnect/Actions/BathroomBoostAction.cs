@@ -18,6 +18,8 @@ namespace NeoConnect
             _serviceScopeFactory = serviceScopeFactory;
         }
 
+        public string? Id => "bathroom_boost";
+
         public string? Name => "Bathroom Boost";
 
         public string? Schedule => _config["BoostSchedule"];
@@ -26,7 +28,7 @@ namespace NeoConnect
         {
             using (var scope = _serviceScopeFactory.CreateScope())
             {
-                var heatingService = scope.ServiceProvider.GetService<IHeatingService>();
+                var heatingService = scope.ServiceProvider.GetRequiredService<IHeatingService>();
                 await heatingService.BoostTowelRailWhenBathroomIsCold(stoppingToken);
             }
         }                
