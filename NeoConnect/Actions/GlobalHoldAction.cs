@@ -21,9 +21,11 @@ namespace NeoConnect
             _emailService = emailService;
         }
 
-        public string? Id => "global_hold";
+        public string Id => "global_hold";
 
-        public string? Name => "Global Hold";
+        public string Name => "Global Hold";
+
+        public string Description => "Holds all thermostats at 0.5° below their set temperature if it is due to be warm and/or sunny in 1 hour's time.";
 
         public string? Schedule => _config["HoldSchedule"];
 

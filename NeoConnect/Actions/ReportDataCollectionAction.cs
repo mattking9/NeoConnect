@@ -17,9 +17,11 @@ namespace NeoConnect
             _serviceScopeFactory = serviceScopeFactory;
         }
 
-        public string? Id => "data_collection";
+        public string Id => "data_collection";
 
-        public string? Name => "Report Data Collection";
+        public string Name => "Report Data Collection";
+
+        public string Description => "Periodically gathers status data on all devices and saves them to the database for reporting purposes.";
 
         public string? Schedule => _config["ReportDataCollectionSchedule"];
 

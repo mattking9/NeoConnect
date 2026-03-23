@@ -27,5 +27,11 @@ namespace NeoConnect
 
             return Ok();
         }
+
+        [HttpGet]
+        public async Task<ActionResult> GetAll()
+        {
+            return Ok(_actions);
+        }
     }
 }

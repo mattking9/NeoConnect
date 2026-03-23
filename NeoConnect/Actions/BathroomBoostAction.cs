@@ -18,9 +18,11 @@ namespace NeoConnect
             _serviceScopeFactory = serviceScopeFactory;
         }
 
-        public string? Id => "bathroom_boost";
+        public string Id => "bathroom_boost";
 
-        public string? Name => "Bathroom Boost";
+        public string Name => "Bathroom Boost";
+
+        public string Description => "Turns on the Bathroom Towel Radiator (in addition to UFH) if the Bathroom is 1° or more below it's target temperature.";
 
         public string? Schedule => _config["BoostSchedule"];
 

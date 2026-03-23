@@ -321,6 +321,48 @@ async function loadSchedules() {
     }
 }
 
+async function loadAutomations() {
+
+    const container = document.getElementById('automations');
+    container.innerHTML = '<p class="loading">Loading automations...</p>';
+
+    try {
+        const response = await fetch(`${url}/Actions`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const automations = await response.json();
+
+        if (automations.length === 0) {
+            container.innerHTML = '<p>No automations found.</p>';
+            return;
+        }
+
+        let automationsHtml = '';
+
+        automations.forEach(item => {
+            automationsHtml += `
+                <div class="col-md-4">
+                    <div class="card text-center mt-3">
+                        <div class="card-body">
+                            <h5 class="card-title truncate">${item.name}</h5>
+                            <p class="card-text">${item.description}</p>
+                            <button id="${item.id}Btn" class="btn btn-primary mr-2" onclick="runAction('${item.id}');"><i class="fa fa-bolt">&nbsp;</i> Run Now</button>
+                        </div>
+                    </div>
+                </div>`;            
+        });        
+
+        container.innerHTML = automationsHtml;
+
+    } catch (error) {
+        container.innerHTML = `<p class="error">Error loading schedules: ${error.message}</p>`;
+        console.error('Error:', error);
+    }
+}
+
 async function loadNav() {
     const navContainer = document.getElementById('nav-container');
     navContainer.innerHTML= `
@@ -340,16 +382,8 @@ async function loadNav() {
     </div>`;
 }
 
-async function dataCollection() {
-    runAction("data_collection", "dataCollectionBtn")
-}
-
-async function globalHold() {
-    runAction("global_hold", "globalHoldBtn")
-}
-
-async function runAction(actionName, btnId) {
-    const btn = document.getElementById(btnId);
+async function runAction(actionName) {
+    const btn = document.getElementById(actionName + 'Btn');
     btn.disabled = true;
     const response = await fetch(`${url}/Actions?actionName=${actionName}`, {method: "POST"});    
     btn.disabled = false;

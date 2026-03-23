@@ -29,9 +29,11 @@ namespace NeoConnect
             _logger = logger;
         }
 
-        public string? Id => "run_immersion";
+        public string Id => "run_immersion";
 
-        public string? Name => "Run Immersion";
+        public string Name => "Run Immersion";
+
+        public string Description => "Turns on the immersion when solar is exporting more than 3kW, then polls the ensure that solar is still generating more than immersion is consuming.";
 
         public string? Schedule => _config["RunImmersionSchedule"];
 
@@ -71,9 +73,9 @@ namespace NeoConnect
                     _logger.LogInformation("Starting Solar Output Monitoring loop");
 
                     var startedAt = DateTime.Now;
-                    var loop = true;                        
+                    var isOn = true;                        
 
-                    while (loop && !stoppingToken.IsCancellationRequested)
+                    while (isOn)
                     {
                         // wait 3 minutes before executing
                         await Task.Delay(3 * 60 * 1000);
@@ -83,18 +85,19 @@ namespace NeoConnect
                         var solarData = await solarService.GetRealtimeData();
 
                         // we assume immersion has reached target temperature if load is less than the power it draws
-                        var isHeatingComplete = solarData.Load < 2.8M;                            
+                        var isHeatingComplete = solarData.Load < 2.8M;
 
-                        // Turn immersion OFF if any of the following are true:
-                        // - Immersion is up to temperature
-                        // - Solar is generating less than is being consumed
-                        // - Battery charge is below 90%
-                        // - Job has been running for 2 hours (failsafe)
-                        if (isHeatingComplete || solarData.GeneratedPower < solarData.Load || solarData.SoC <= BatterySoCThreshold || DateTime.Now >= startedAt.AddHours(2))
+                        // Turn immersion OFF if any of the conditions are met
+                        if ( 
+                            isHeatingComplete || 
+                            solarData.GeneratedPower < solarData.Load || 
+                            solarData.SoC <= BatterySoCThreshold || 
+                            DateTime.Now >= startedAt.AddHours(2) || 
+                            stoppingToken.IsCancellationRequested)
                         {
                             await immersionService.TurnOffDevice();
                                 
-                            loop = false;
+                            isOn = false;
                                     
                             if (isHeatingComplete)
                             {
