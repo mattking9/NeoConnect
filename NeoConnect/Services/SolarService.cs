@@ -29,7 +29,7 @@ namespace NeoConnect
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task<SolarData> GetRealtimeData()
+        public async Task<SolarData> GetRealtimeData(CancellationToken stoppingToken)
         {
             var path = "/op/v1/device/real/query";
 
@@ -59,7 +59,7 @@ namespace NeoConnect
                 content.Headers.Add("signature", signature);
                 content.Headers.Add("lang", "en");
 
-                var response = await client.PostAsync(url, content);
+                var response = await client.PostAsync(url, content, stoppingToken);
 
                 if (response.IsSuccessStatusCode)
                 {

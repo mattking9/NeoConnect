@@ -51,7 +51,7 @@ namespace NeoConnect
 
             return await SendEmail(
                 "Neo Connect Error",
-                $"Neo Connect encountered the following error: <h3>{error?.Message}</h3><p>{error?.StackTrace ?? "(Stack trace unavailable)"}</p>",
+                $"Neo Connect encountered the following error: <h3>{error?.Message}</h3><p>Please check any devices that might be left in an incomplete state.</p><p>{error?.StackTrace ?? "(Stack trace unavailable)"}</p>",
                 true,
                 stoppingToken);            
         }

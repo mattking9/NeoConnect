@@ -349,6 +349,7 @@ async function loadAutomations() {
                         <div class="card-body">
                             <h5 class="card-title truncate">${item.name}</h5>
                             <p class="card-text">${item.description}</p>
+                            <p class="card-text">Schedule: ${item.schedule}</p>
                             <button id="${item.id}Btn" class="btn btn-primary mr-2" onclick="runAction('${item.id}');"><i class="fa fa-bolt">&nbsp;</i> Run Now</button>
                         </div>
                     </div>

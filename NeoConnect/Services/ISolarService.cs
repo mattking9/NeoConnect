@@ -2,6 +2,6 @@
 {
     public interface ISolarService
     {
-        Task<SolarData> GetRealtimeData();
+        Task<SolarData> GetRealtimeData(CancellationToken stoppingToken);
     }
 }

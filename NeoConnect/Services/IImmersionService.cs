@@ -2,7 +2,7 @@
 {
     public interface IImmersionService
     {
-        Task TurnOffDevice();
-        Task TurnOnDevice();
+        Task TurnOffDevice(CancellationToken stoppingToken);
+        Task TurnOnDevice(CancellationToken stoppingToken);
     }
 }

@@ -24,19 +24,19 @@ namespace NeoConnect
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task TurnOnDevice()
+        public async Task TurnOnDevice(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Turning ON Immersion");
-            await TurnSwitchOnOrOff(true);
+            await TurnSwitchOnOrOff(true, stoppingToken);
         }
 
-        public async Task TurnOffDevice()
+        public async Task TurnOffDevice(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Turning OFF Immersion");
-            await TurnSwitchOnOrOff(false);
+            await TurnSwitchOnOrOff(false, stoppingToken);
         }
 
-        private async Task<string> GetAccessToken(HttpClient client)
+        private async Task<string> GetAccessToken(HttpClient client, CancellationToken stoppingToken)
         {
             var path = "/v1.0/token?grant_type=1";
             var method = "GET";
@@ -57,7 +57,7 @@ namespace NeoConnect
             request.Headers.Add("t", timestamp);
             request.Headers.Add("sign_method", "HMAC-SHA256");
 
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request, stoppingToken);
             var json = await response.Content.ReadAsStringAsync();
 
             using var doc = JsonDocument.Parse(json);
@@ -67,11 +67,11 @@ namespace NeoConnect
                       .GetString()!;
         }
 
-        private async Task TurnSwitchOnOrOff(bool state)
+        private async Task TurnSwitchOnOrOff(bool state, CancellationToken stoppingToken)
         {
             using var client = _httpClientFactory.CreateClient();
 
-            var accessToken = await GetAccessToken(client);
+            var accessToken = await GetAccessToken(client, stoppingToken);
 
             var path = $"/v1.0/devices/{_deviceId}/commands";
             var method = "POST";
@@ -103,7 +103,7 @@ namespace NeoConnect
 
             request.Content = new StringContent(body, Encoding.UTF8, "application/json");
 
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request, stoppingToken);
 
             if (response.IsSuccessStatusCode)
             {
