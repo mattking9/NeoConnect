@@ -13,13 +13,15 @@ namespace NeoConnect
     /// operations.</remarks>
     public class RunImmersionAction : IScheduledAction
     {
+        private const decimal FeedInThreshold = 3.2M;
+        private const decimal BatterySoCThreshold = 90;
+
         private readonly IConfiguration _config;
         private readonly IEmailService _emailService;
         private readonly IServiceScopeFactory _serviceScopeFactory;
-        private readonly ILogger<RunImmersionAction> _logger;
+        private readonly ILogger<RunImmersionAction> _logger;        
 
-        private const decimal FeedInThreshold = 3.2M;
-        private const decimal BatterySoCThreshold = 90;
+        private bool _isRunning;
 
         public RunImmersionAction(IConfiguration config, IEmailService emailService, IServiceScopeFactory serviceScopeFactory, ILogger<RunImmersionAction> logger)
         {
@@ -33,12 +35,20 @@ namespace NeoConnect
 
         public string Name => "Run Immersion";
 
-        public string Description => "Turns on the immersion when solar is exporting more than 3kW, then polls the ensure that solar is still generating more than immersion is consuming.";
+        public string Description => "Turns on the immersion when solar is exporting more than 3kW, then polls to ensure solar continues to generate enough.";
 
         public string? Schedule => _config["RunImmersionSchedule"];
 
         public async Task Action(CancellationToken stoppingToken)
-        {            
+        {   
+            if (_isRunning)
+            {
+                _logger.LogInformation("Action is already running");
+                return;
+            }
+
+            _isRunning = true;
+
             using (var scope = _serviceScopeFactory.CreateScope())
             {
                 var solarService = scope.ServiceProvider.GetRequiredService<ISolarService>();
@@ -130,9 +140,12 @@ namespace NeoConnect
                             await immersionService.TurnOffDevice(stoppingToken);
                             _logger.LogWarning("Immersion was turned OFF after exception was thrown.");
                         }
+                        _isRunning = false;
                         throw;
                     }
                 }
+
+                _isRunning = false;
             }
         }
     }

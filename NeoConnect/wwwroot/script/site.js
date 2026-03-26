@@ -344,7 +344,7 @@ async function loadAutomations() {
 
         automations.forEach(item => {
             automationsHtml += `
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <div class="card text-center mt-3">
                         <div class="card-body">
                             <h5 class="card-title truncate">${item.name}</h5>
