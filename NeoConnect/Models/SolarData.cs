@@ -12,6 +12,6 @@
 
         public DateTime Timestamp { get; set; }
 
-        public TimeSpan TimeUntilNextUpdate => Timestamp.AddMinutes(5) - DateTime.Now;
+        public TimeSpan TimeUntilNextUpdate => Timestamp.AddMinutes(5).AddSeconds(10) - DateTime.Now;
     }
 }

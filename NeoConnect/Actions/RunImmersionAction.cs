@@ -91,14 +91,14 @@ namespace NeoConnect
                         while (isOn && !stoppingToken.IsCancellationRequested)
                         {
                             // Wait until next update to solar data (expected to be 5 minutes from last update)
-                            await Task.Delay(solarData.TimeUntilNextUpdate, stoppingToken);                            
+                            await Task.Delay(solarData.TimeUntilNextUpdate, stoppingToken);
+
+                            _logger.LogInformation("Checking Solar Output");
 
                             solarData = await solarService.GetRealtimeData(stoppingToken);
                             
                             // If data is older than expected then we can't trust it.
-                            var isStaleData = solarData.TimeUntilNextUpdate < TimeSpan.Zero;
-                            
-                            _logger.LogInformation("Checking Solar Output");
+                            var isStaleData = solarData.TimeUntilNextUpdate < TimeSpan.Zero;                                                        
 
                             // we assume immersion has reached target temperature if load is less than the power it draws
                             var isHeatingComplete = solarData.Load < 2.8M;
