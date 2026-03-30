@@ -44,14 +44,16 @@ namespace NeoConnect
                 var solarService = scope.ServiceProvider.GetRequiredService<ISolarService>();
                 var immersionService = scope.ServiceProvider.GetRequiredService<IImmersionService>();
 
-                // Test level of exported power for 5 minutes to see if it remains above threshold
-                _logger.LogInformation("Testing exported power for 5 minutes");
-                var isStableExport = false;
-                for (int i = 0; i < 5; i++)
-                {
-                    var solarData = await solarService.GetRealtimeData(stoppingToken);
+                SolarData solarData = null;
 
-                    if (solarData.Timestamp < DateTime.Now.AddMinutes(-6))
+                // Get 3 readings to see if level of exported power remains consistently above threshold
+                _logger.LogInformation("Testing exported power.");
+                var isStableExport = false;                
+                for (int i = 0; i < 3; i++)
+                {
+                    solarData = await solarService.GetRealtimeData(stoppingToken);
+
+                    if (solarData.TimeUntilNextUpdate < TimeSpan.Zero)
                     {
                         _logger.LogWarning("Failed to retrieve up-to-date solar data");
                         break;
@@ -63,9 +65,10 @@ namespace NeoConnect
                         _logger.LogInformation($"Solar Export is below {FeedInThreshold}kW or Battery Charge is below {BatterySoCThreshold}%");
                         break;
                     }
-                    if (i < 5)
+                    if (i < 2)
                     {
-                        await Task.Delay(60 * 1000, stoppingToken);
+                        // Wait until next update to solar data (expected to be 5 minutes from last update)
+                        await Task.Delay(solarData.TimeUntilNextUpdate, stoppingToken);
                     }
                 }
                 
@@ -83,24 +86,18 @@ namespace NeoConnect
 
                         _logger.LogInformation("Starting Solar Output Monitoring loop");
 
-                        var startedAt = DateTime.Now;
+                        var startedAt = DateTime.Now;                        
 
                         while (isOn && !stoppingToken.IsCancellationRequested)
                         {
-                            // wait 2 minutes before executing
-                            await Task.Delay(2 * 60 * 1000, stoppingToken);
+                            // Wait until next update to solar data (expected to be 5 minutes from last update)
+                            await Task.Delay(solarData.TimeUntilNextUpdate, stoppingToken);                            
 
-                            var solarData = await solarService.GetRealtimeData(stoppingToken);
-
-                            // If data is returned but timestamp says it is more than 8 minutes old then we can't trust it.
-                            var isStaleData = solarData.Timestamp < DateTime.Now.AddMinutes(-8);
-
-                            // If data is returned but timestamp says it is more than 2 minutes old then fetch again until it has been refreshed
-                            if (!isStaleData && solarData.Timestamp < DateTime.Now.AddMinutes(-2))
-                            {
-                                continue;
-                            }
-
+                            solarData = await solarService.GetRealtimeData(stoppingToken);
+                            
+                            // If data is older than expected then we can't trust it.
+                            var isStaleData = solarData.TimeUntilNextUpdate < TimeSpan.Zero;
+                            
                             _logger.LogInformation("Checking Solar Output");
 
                             // we assume immersion has reached target temperature if load is less than the power it draws
