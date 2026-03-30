@@ -19,9 +19,7 @@ namespace NeoConnect
         private readonly IConfiguration _config;
         private readonly IEmailService _emailService;
         private readonly IServiceScopeFactory _serviceScopeFactory;
-        private readonly ILogger<RunImmersionAction> _logger;        
-
-        private bool _isRunning;
+        private readonly ILogger<RunImmersionAction> _logger;
 
         public RunImmersionAction(IConfiguration config, IEmailService emailService, IServiceScopeFactory serviceScopeFactory, ILogger<RunImmersionAction> logger)
         {
@@ -89,15 +87,21 @@ namespace NeoConnect
 
                         while (isOn && !stoppingToken.IsCancellationRequested)
                         {
-                            // wait 3 minutes before executing
-                            await Task.Delay(3 * 60 * 1000, stoppingToken);
-
-                            _logger.LogInformation("Monitoring Solar Output");
+                            // wait 2 minutes before executing
+                            await Task.Delay(2 * 60 * 1000, stoppingToken);
 
                             var solarData = await solarService.GetRealtimeData(stoppingToken);
 
-                            // Ensure data is up to date (within the last 6 minutes)
-                            var isStaleData = solarData.Timestamp < DateTime.Now.AddMinutes(-6);
+                            // If data is returned but timestamp says it is more than 8 minutes old then we can't trust it.
+                            var isStaleData = solarData.Timestamp < DateTime.Now.AddMinutes(-8);
+
+                            // If data is returned but timestamp says it is more than 2 minutes old then fetch again until it has been refreshed
+                            if (!isStaleData && solarData.Timestamp < DateTime.Now.AddMinutes(-2))
+                            {
+                                continue;
+                            }
+
+                            _logger.LogInformation("Checking Solar Output");
 
                             // we assume immersion has reached target temperature if load is less than the power it draws
                             var isHeatingComplete = solarData.Load < 2.8M;
@@ -135,7 +139,7 @@ namespace NeoConnect
                             }
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         // Ensure immersion is turned off if it is on when something goes wrong.
                         if (isOn)
@@ -143,12 +147,9 @@ namespace NeoConnect
                             await immersionService.TurnOffDevice(stoppingToken);
                             _logger.LogWarning("Immersion was turned OFF after exception was thrown.");
                         }
-                        _isRunning = false;
                         throw;
                     }
                 }
-
-                _isRunning = false;
             }
         }
     }
