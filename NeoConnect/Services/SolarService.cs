@@ -90,7 +90,8 @@ namespace NeoConnect
                         GeneratedPower = result.Datas.Find(d => d.Variable == GenerationPower).Value,
                         FeedInPower = result.Datas.Find(d => d.Variable == FeedinPower).Value,
                         SoC = result.Datas.Find(d => d.Variable == SoC).Value,
-                        Load = result.Datas.Find(d => d.Variable == LoadPower).Value,                        
+                        Load = result.Datas.Find(d => d.Variable == LoadPower).Value,    
+                        Timestamp = DateTime.Parse(result.Time.Substring(0, 19))
                     };
                 }
                 else

@@ -9,5 +9,7 @@
         public decimal SoC { get; set; }
 
         public decimal Load { get; set; }
+
+        public DateTime Timestamp { get; set; }
     }
 }
