@@ -40,15 +40,7 @@ namespace NeoConnect
         public string? Schedule => _config["RunImmersionSchedule"];
 
         public async Task Action(CancellationToken stoppingToken)
-        {   
-            //if (_isRunning)
-            //{
-            //    _logger.LogInformation("Action is already running");
-            //    return;
-            //}
-
-            _isRunning = true;
-
+        {            
             using (var scope = _serviceScopeFactory.CreateScope())
             {
                 var solarService = scope.ServiceProvider.GetRequiredService<ISolarService>();
@@ -61,7 +53,7 @@ namespace NeoConnect
                 {
                     var solarData = await solarService.GetRealtimeData(stoppingToken);
 
-                    if (solarData.Timestamp > DateTime.Now.AddMinutes(-6))
+                    if (solarData.Timestamp < DateTime.Now.AddMinutes(-6))
                     {
                         _logger.LogWarning("Failed to retrieve up-to-date solar data");
                         break;
@@ -105,7 +97,7 @@ namespace NeoConnect
                             var solarData = await solarService.GetRealtimeData(stoppingToken);
 
                             // Ensure data is up to date (within the last 6 minutes)
-                            var isUpToDate = solarData.Timestamp > DateTime.Now.AddMinutes(-6);
+                            var isStaleData = solarData.Timestamp < DateTime.Now.AddMinutes(-6);
 
                             // we assume immersion has reached target temperature if load is less than the power it draws
                             var isHeatingComplete = solarData.Load < 2.8M;
@@ -116,7 +108,7 @@ namespace NeoConnect
                             // - Solar is generating less than is being consumed
                             // - Battery charge is below 90%
                             // - Job has been running for 2 hours (failsafe)
-                            if (!isUpToDate || isHeatingComplete || solarData.GeneratedPower < solarData.Load || solarData.SoC <= BatterySoCThreshold || DateTime.Now >= startedAt.AddHours(2))
+                            if (isStaleData || isHeatingComplete || solarData.GeneratedPower < solarData.Load || solarData.SoC <= BatterySoCThreshold || DateTime.Now >= startedAt.AddHours(2))
                             {
                                 await immersionService.TurnOffDevice(stoppingToken);
 
