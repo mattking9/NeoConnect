@@ -93,7 +93,7 @@ namespace NeoConnect
                 int lastIdx = -1;
                 foreach (var val in deviceData)
                 {
-                    var nextIdx = GetIndex(val.Timestamp);
+                    var nextIdx = GetIndex(val.Timestamp.ToLocalTime()); //timestamp is stored in UTC
 
 
                     // Fill gaps
