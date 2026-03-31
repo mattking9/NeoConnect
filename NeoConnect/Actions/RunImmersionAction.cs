@@ -106,10 +106,9 @@ namespace NeoConnect
                             // Turn immersion OFF if any of the following are true:
                             // - Data is stale (cannot trust the readings to make a decision)
                             // - Immersion is up to temperature
-                            // - Solar is generating less than is being consumed
-                            // - Battery charge is below 90%
+                            // - Solar is generating less than is being consumed AND Battery charge is below 95%
                             // - Job has been running for 2 hours (failsafe)
-                            if (isStaleData || isHeatingComplete || solarData.GeneratedPower < solarData.Load || solarData.SoC <= BatterySoCThreshold || DateTime.Now >= startedAt.AddHours(2))
+                            if (isStaleData || isHeatingComplete || (solarData.GeneratedPower < solarData.Load && solarData.SoC <= 95) || DateTime.Now >= startedAt.AddHours(2))
                             {
                                 await immersionService.TurnOffDevice(stoppingToken);
 
