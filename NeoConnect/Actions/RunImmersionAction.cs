@@ -117,20 +117,28 @@ namespace NeoConnect
 
                                 if (isHeatingComplete)
                                 {
-                                    // Turn off Boiler-heated Hot Water for 8 hours
+                                    _logger.LogInformation("Heating complete");
+
+                                    // Turn off Boiler-fed Hot Water for 8 hours
                                     var heatingService = scope.ServiceProvider.GetRequiredService<IHeatingService>();
                                     await heatingService.TurnOffHotWater(8, stoppingToken);
 
                                     await _emailService.SendInfoEmail([
                                         "Immersion was turned OFF (target temperature was reached)",
-                                        "Boiler Hot Water was turned OFF for 8 hours"
+                                        "Boiler-fed Hot Water was turned OFF for 8 hours"
                                     ], stoppingToken);
 
                                     _logger.LogInformation("Pausing Action for 2 hours");
                                     await Task.Delay(2 * 60 * 60 * 1000, stoppingToken); // 2 hours
                                 }
+                                else if (isStaleData)
+                                {
+                                    _logger.LogWarning($"Failed to retrieve up-to-date solar data. Data was last refreshed at {solarData.Timestamp.ToString("G")} ");
+                                    await _emailService.SendInfoEmail("Immersion was turned OFF (Unable to fetch recent data)", stoppingToken);
+                                }
                                 else
                                 {
+                                    _logger.LogInformation($"Process was ended early. Solar: {solarData.GeneratedPower}kW, Load: {solarData.Load}kW, Battery: {solarData.SoC}%");
                                     await _emailService.SendInfoEmail("Immersion was turned OFF (process was aborted before target temperature was reached)", stoppingToken);
                                 }
                             }
