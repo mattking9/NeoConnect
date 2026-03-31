@@ -27,7 +27,7 @@ namespace NeoConnect
         public IDisposable? BeginScope<TState>(TState state)
             where TState : notnull
         {
-            return null;
+            return new LoggerScope(state);
         }
 
         /// <inheritdoc/>
@@ -49,6 +49,8 @@ namespace NeoConnect
                 return;
             }
 
+            var scopes = LoggerScope.GetScopeDictionary();
+
             var logEntry = new LogEntry
             {
                 Timestamp = DateTime.UtcNow,
@@ -56,6 +58,7 @@ namespace NeoConnect
                 Category = categoryName,
                 Message = formatter(state, exception),
                 Exception = exception?.ToString(),
+                Scopes = scopes.Count > 0 ? scopes : null,
             };
 
             provider.AddLog(logEntry);

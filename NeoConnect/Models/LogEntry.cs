@@ -33,5 +33,10 @@ namespace NeoConnect
         /// Gets or sets the exception details if an error was logged.
         /// </summary>
         public string? Exception { get; set; }
+
+        /// <summary>
+        /// Gets or sets the scope information for this log entry.
+        /// </summary>
+        public Dictionary<string, object>? Scopes { get; set; }
     }
 }

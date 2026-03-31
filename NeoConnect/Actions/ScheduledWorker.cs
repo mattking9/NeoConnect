@@ -1,4 +1,5 @@
 using Cronos;
+using System.Xml.Linq;
 
 namespace NeoConnect
 {
@@ -35,24 +36,33 @@ namespace NeoConnect
 
                 _logger.LogInformation($"{_action.Name}: Next run scheduled for " + nextRun.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss"));
                 await Task.Delay(nextRun - offsetNow, stoppingToken);
-                
-                try
-                {
-                    _logger.LogInformation($"** {_action.Name} **");
 
-                    await _action.Action(stoppingToken);
 
-                    _logger.LogInformation("Process Completed.");
-                }
-                catch (OperationCanceledException)
+                using (_logger.BeginScope(new Dictionary<string, object>
                 {
-                    _logger.LogWarning("Operation was canceled");
-                }
-                catch (Exception ex)
+                    ["CorrelationId"] = Guid.NewGuid(),
+                    ["ActionId"] = _action.Id,
+                    ["ActionName"] = _action.Name
+                }))
                 {
-                    _logger.LogError(ex, "Execution Error. Aborting.");
+                    try
+                    {
+                        _logger.LogInformation($"** {_action.Name} **");
 
-                    await _emailService.SendErrorEmail(ex, stoppingToken);
+                        await _action.Action(stoppingToken);
+
+                        _logger.LogInformation("Process Completed.");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _logger.LogWarning("Operation was canceled");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Execution Error. Aborting.");
+
+                        await _emailService.SendErrorEmail(ex, stoppingToken);
+                    }
                 }
             }
         }
