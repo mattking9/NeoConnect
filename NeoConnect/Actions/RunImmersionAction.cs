@@ -11,7 +11,7 @@ namespace NeoConnect
     /// <remarks>This action is designed to be executed on a schedule defined in the application
     /// configuration. It initializes the heating service, reports device statuses, and performs cleanup
     /// operations.</remarks>
-    public class RunImmersionAction : IScheduledAction
+    public class RunImmersionAction : ScheduledAction
     {
         private const decimal FeedInThreshold = 3.2M;
         private const decimal BatterySoCThreshold = 90;
@@ -22,6 +22,7 @@ namespace NeoConnect
         private readonly ILogger<RunImmersionAction> _logger;
 
         public RunImmersionAction(IConfiguration config, IEmailService emailService, IServiceScopeFactory serviceScopeFactory, ILogger<RunImmersionAction> logger)
+            : base(logger, emailService)
         {
             _config = config;
             _emailService = emailService;
@@ -29,15 +30,15 @@ namespace NeoConnect
             _logger = logger;
         }
 
-        public string Id => "run_immersion";
+        public override string Id => "run_immersion";
 
-        public string Name => "Run Immersion";
+        public override string Name => "Run Immersion";
 
-        public string Description => "Turns on the immersion when solar is exporting more than 3kW, then polls to ensure solar continues to generate enough.";
+        public override string Description => "Turns on the immersion when solar is exporting more than 3kW, then polls to ensure solar continues to generate enough.";
 
-        public string? Schedule => _config["RunImmersionSchedule"];
+        public override string? Schedule => _config["RunImmersionSchedule"];
 
-        public async Task Action(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {            
             using (var scope = _serviceScopeFactory.CreateScope())
             {

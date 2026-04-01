@@ -64,7 +64,7 @@ namespace NeoConnect.UnitTests
             _mockWeatherService.Setup(w => w.GetForecast(token)).ReturnsAsync(forecast);
 
             // Act
-            await _action.Action(token);
+            await _action.Run(token);
 
             // Assert
             _mockWeatherService.Verify(w => w.GetForecast(token), Times.Once);
@@ -84,7 +84,7 @@ namespace NeoConnect.UnitTests
             _mockWeatherService.Setup(w => w.GetForecast(token)).ReturnsAsync(forecast);
 
             // Act
-            await _action.Action(token);
+            await _action.Run(token);
 
             // Assert
             _mockWeatherService.Verify(w => w.GetForecast(token), Times.Once);
@@ -104,7 +104,7 @@ namespace NeoConnect.UnitTests
             _mockWeatherService.Setup(w => w.GetForecast(token)).ReturnsAsync(forecast);
 
             // Act
-            await _action.Action(token);
+            await _action.Run(token);
 
             // Assert
             _mockWeatherService.Verify(w => w.GetForecast(token), Times.Once);
@@ -124,7 +124,7 @@ namespace NeoConnect.UnitTests
             _mockWeatherService.Setup(w => w.GetForecast(token)).ReturnsAsync(forecast);
 
             // Act
-            await _action.Action(token);
+            await _action.Run(token);
 
             // Assert
             _mockWeatherService.Verify(w => w.GetForecast(token), Times.Once);
@@ -144,7 +144,7 @@ namespace NeoConnect.UnitTests
             _mockWeatherService.Setup(w => w.GetForecast(token)).ReturnsAsync(forecast);
 
             // Act
-            await _action.Action(token);
+            await _action.Run(token);
 
             // Assert
             _mockWeatherService.Verify(w => w.GetForecast(token), Times.Once);

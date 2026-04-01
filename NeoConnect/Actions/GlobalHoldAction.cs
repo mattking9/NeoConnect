@@ -6,7 +6,7 @@ namespace NeoConnect
     /// </summary>
     /// <remarks>This action retrieves the weather forecast and adjusts the heating system's settings
     /// accordingly. The schedule for this action is configured via the application settings.</remarks>
-    public class GlobalHoldAction : IScheduledAction
+    public class GlobalHoldAction : ScheduledAction
     {
         private readonly IConfiguration _config;
         private readonly IServiceScopeFactory _serviceScopeFactory;
@@ -14,6 +14,7 @@ namespace NeoConnect
         private readonly IEmailService _emailService;
 
         public GlobalHoldAction(IConfiguration config, IServiceScopeFactory serviceScopeFactory, ILogger<GlobalHoldAction> logger, IEmailService emailService)
+            : base(logger, emailService)
         {
             _config = config;
             _serviceScopeFactory = serviceScopeFactory;
@@ -21,15 +22,15 @@ namespace NeoConnect
             _emailService = emailService;
         }
 
-        public string Id => "global_hold";
+        public override string Id => "global_hold";
 
-        public string Name => "Global Hold";
+        public override string Name => "Global Hold";
 
-        public string Description => "Holds all thermostats at 0.5° below their set temperature if it is due to be warm and/or sunny in 1 hour's time.";
+        public override string Description => "Holds all thermostats at 0.5° below their set temperature if it is due to be warm and/or sunny in 1 hour's time.";
 
-        public string? Schedule => _config["HoldSchedule"];
+        public override string? Schedule => _config["HoldSchedule"];
 
-        public async Task Action(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             using (var scope = _serviceScopeFactory.CreateScope())
             {

@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 namespace NeoConnect
 {
     /// <summary>
-    /// Logger provider that creates InMemoryLogger instances and stores logs in memory.
+    /// _logger provider that creates InMemoryLogger instances and stores logs in memory.
     /// </summary>
     public class InMemoryLoggerProvider : ILoggerProvider
     {

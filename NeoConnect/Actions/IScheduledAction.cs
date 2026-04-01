@@ -6,6 +6,7 @@ namespace NeoConnect
         string Name { get; }
         string Description { get; }
         string? Schedule { get; }
-        Task Action(CancellationToken stoppingToken);
+        bool IsRunning { get; }
+        Task Run(CancellationToken stoppingToken);
     }
 }

@@ -1,6 +1,7 @@
 using Moq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace NeoConnect.UnitTests
 {
@@ -9,6 +10,8 @@ namespace NeoConnect.UnitTests
     {
         private Mock<IConfiguration> _mockConfig;
         private Mock<IServiceScopeFactory> _mockScopeFactory;
+        private Mock<ILogger> _mockLogger;
+        private Mock<IEmailService> _mockEmailService;
         private Mock<IServiceScope> _mockScope;
         private Mock<IServiceProvider> _mockProvider;
         private Mock<IHeatingService> _mockHeatingService;
@@ -18,6 +21,8 @@ namespace NeoConnect.UnitTests
         public void Setup()
         {
             _mockConfig = new Mock<IConfiguration>();
+            _mockLogger = new Mock<ILogger>();
+            _mockEmailService = new Mock<IEmailService>();
             _mockScopeFactory = new Mock<IServiceScopeFactory>();
             _mockScope = new Mock<IServiceScope>();
             _mockProvider = new Mock<IServiceProvider>();
@@ -27,7 +32,7 @@ namespace NeoConnect.UnitTests
             _mockScope.Setup(s => s.ServiceProvider).Returns(_mockProvider.Object);
             _mockProvider.Setup(p => p.GetService(typeof(IHeatingService))).Returns(_mockHeatingService.Object);
 
-            _action = new BathroomBoostAction(_mockConfig.Object, _mockScopeFactory.Object);
+            _action = new BathroomBoostAction(_mockConfig.Object, _mockScopeFactory.Object, _mockEmailService.Object, _mockLogger.Object);
         }
 
         [Test]
@@ -51,7 +56,7 @@ namespace NeoConnect.UnitTests
             _mockHeatingService.Setup(s => s.BoostTowelRailWhenBathroomIsCold(token)).Returns(Task.CompletedTask);
 
             // Act
-            await _action.Action(token);
+            await _action.Run(token);
 
             // Assert
             _mockHeatingService.Verify(s => s.BoostTowelRailWhenBathroomIsCold(token), Times.Once);

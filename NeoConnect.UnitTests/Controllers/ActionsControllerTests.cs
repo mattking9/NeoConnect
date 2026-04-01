@@ -17,12 +17,12 @@ namespace NeoConnect.UnitTests.Controllers
             _mockAction1 = new Mock<IScheduledAction>();
             _mockAction1.Setup(a => a.Id).Returns("test_action_1");
             _mockAction1.Setup(a => a.Name).Returns("Test Action 1");
-            _mockAction1.Setup(a => a.Action(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            _mockAction1.Setup(a => a.Run(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
             _mockAction2 = new Mock<IScheduledAction>();
             _mockAction2.Setup(a => a.Id).Returns("test_action_2");
             _mockAction2.Setup(a => a.Name).Returns("Test Action 2");
-            _mockAction2.Setup(a => a.Action(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            _mockAction2.Setup(a => a.Run(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
             var actions = new List<IScheduledAction> { _mockAction1.Object, _mockAction2.Object };
 
@@ -91,7 +91,7 @@ namespace NeoConnect.UnitTests.Controllers
             await _controller.Post(actionName);
 
             // assert
-            _mockAction1.Verify(a => a.Action(CancellationToken.None), Times.Once);
+            _mockAction1.Verify(a => a.Run(CancellationToken.None), Times.Once);
         }
 
         [Test]
@@ -104,8 +104,8 @@ namespace NeoConnect.UnitTests.Controllers
             await _controller.Post(actionName);
 
             // assert
-            _mockAction2.Verify(a => a.Action(CancellationToken.None), Times.Once);
-            _mockAction1.Verify(a => a.Action(It.IsAny<CancellationToken>()), Times.Never);
+            _mockAction2.Verify(a => a.Run(CancellationToken.None), Times.Once);
+            _mockAction1.Verify(a => a.Run(It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Test]
@@ -145,8 +145,8 @@ namespace NeoConnect.UnitTests.Controllers
             await _controller.Post(actionName);
 
             // assert
-            _mockAction1.Verify(a => a.Action(It.IsAny<CancellationToken>()), Times.Never);
-            _mockAction2.Verify(a => a.Action(It.IsAny<CancellationToken>()), Times.Never);
+            _mockAction1.Verify(a => a.Run(It.IsAny<CancellationToken>()), Times.Never);
+            _mockAction2.Verify(a => a.Run(It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Test]
@@ -180,7 +180,7 @@ namespace NeoConnect.UnitTests.Controllers
         {
             // arrange
             var actionName = "test_action_1";
-            _mockAction1.Setup(a => a.Action(It.IsAny<CancellationToken>()))
+            _mockAction1.Setup(a => a.Run(It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception("Test exception"));
 
             // act & assert
@@ -197,8 +197,8 @@ namespace NeoConnect.UnitTests.Controllers
             await _controller.Post(actionName);
 
             // assert
-            _mockAction1.Verify(a => a.Action(CancellationToken.None), Times.Once);
-            _mockAction2.Verify(a => a.Action(It.IsAny<CancellationToken>()), Times.Never);
+            _mockAction1.Verify(a => a.Run(CancellationToken.None), Times.Once);
+            _mockAction2.Verify(a => a.Run(It.IsAny<CancellationToken>()), Times.Never);
         }
 
         #endregion

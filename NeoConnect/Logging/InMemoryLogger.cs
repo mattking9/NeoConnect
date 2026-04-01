@@ -5,7 +5,7 @@
 namespace NeoConnect
 {
     /// <summary>
-    /// Logger implementation that stores logs in memory.
+    /// _logger implementation that stores logs in memory.
     /// </summary>
     public class InMemoryLogger : ILogger
     {

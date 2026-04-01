@@ -23,7 +23,7 @@ namespace NeoConnect
                 return BadRequest($"Invalid action name.");
             }
 
-            await action.Action(CancellationToken.None);
+            await action.Run(CancellationToken.None);
 
             return Ok();
         }
