@@ -26,6 +26,11 @@
                 </select>
             </div>
             <div class="col-4">                
+                <select id="actionNameFilter" class="form-select" onchange="loadLogs()">
+                    <option value="">All Logs</option>
+                </select>
+            </div>
+            <div class="col-4">                
                 <select id="logCountFilter" class="form-select" onchange="loadLogs()">
                     <option value="50" selected>Last 50</option>
                     <option value="100">Last 100</option>
@@ -33,12 +38,12 @@
                     <option value="1000">Last 1000</option>
                 </select>
             </div>
-            <div class="col-4">                
+            <!--<div class="col-3">                
                 <select id="logSortOrder" class="form-select" onchange="loadLogs()">
                     <option value="asc" selected>Oldest First</option>
                     <option value="desc">Newest First</option>
                 </select>
-            </div>
+            </div>-->
         </div>
         <div class="mb-3">
             <button id="clearLogsBtn" class="btn btn-danger" onclick="clearLogs()">
@@ -54,7 +59,27 @@
     <script src="script/site.js"></script>
     <script>
         loadNav();
-        window.onload = loadLogs;
+        window.onload = function() {
+            loadActionNames();
+            loadLogs();
+        };
+        
+        async function loadActionNames() {
+            try {
+                const response = await fetch('/api/logs/action-names');
+                const actionNames = await response.json();
+                
+                const select = document.getElementById('actionNameFilter');
+                actionNames.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading action names:', error);
+            }
+        }
     </script>
 </body>
 

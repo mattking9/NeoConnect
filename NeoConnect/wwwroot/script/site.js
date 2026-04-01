@@ -375,7 +375,7 @@ async function loadNav() {
             <div class="nav-item px-3"><a class="navlink" href="devices.html"><span class="fa fa-thermometer-half"></span>Devices</a></div>
             <div class="nav-item px-3"><a class="navlink" href="schedules.html"><span class="fa fa-calendar-o"></span>Schedules</a></div>
             <div class="nav-item px-3"><a class="navlink" href="history.html"><span class="fa fa-line-chart"></span>History</a></div>
-            <div class="nav-item px-3"><a class="navlink" href="logs.html"><span class="fa fa-file-text-o"></span>Logs</a></div>
+            <div class="nav-item px-3"><a class="navlink" href="logs.html"><span class="fa fa-file-text-o"></span>Application Logs</a></div>
         </div>
         <a href="javascript:void(0);" class="bars" onclick="toggleMenu()">
             <i class="fa fa-bars"></i>
@@ -428,13 +428,18 @@ async function loadLogs() {
         const logLevelFilter = document.getElementById('logLevelFilter');
         const logCountFilter = document.getElementById('logCountFilter');
         const logSortOrder = document.getElementById('logSortOrder');
+        const actionNameFilter = document.getElementById('actionNameFilter');
         const level = logLevelFilter ? logLevelFilter.value : '';
         const count = logCountFilter ? logCountFilter.value : '50';
         const sortOrder = logSortOrder ? logSortOrder.value : 'asc';
+        const actionName = actionNameFilter ? actionNameFilter.value : '';
 
         let fetchUrl = `${url}/Logs?count=${count}`;
         if (level) {
             fetchUrl += `&level=${level}`;
+        }
+        if (actionName) {
+            fetchUrl += `&actionName=${encodeURIComponent(actionName)}`;
         }
 
         const response = await fetch(fetchUrl);
@@ -450,11 +455,11 @@ async function loadLogs() {
             return;
         }
 
-        logs.sort((a, b) => {
-            const dateA = new Date(a.timestamp);
-            const dateB = new Date(b.timestamp);
-            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-        });
+        //logs.sort((a, b) => {
+        //    const dateA = new Date(a.timestamp);
+        //    const dateB = new Date(b.timestamp);
+        //    return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        //});
 
         let tableHtml = `
             <div style="max-height:75vh;overflow-y:scroll">
@@ -482,13 +487,19 @@ async function loadLogs() {
 
             tableHtml += `
                 <tr class="${logLevelClass}">
-                    <td>${timestamp}</td>                    
-                    <td>
+                    <td>${timestamp}</td>
+            
+
+            
+                    <td>${!actionName && log.scopes && log.scopes.ScheduledActionName ? `<span class="badge rounded-pill bg-light text-dark">${log.scopes.ScheduledActionName}</span>` : ''}
                         ${log.message}
+                        <!--<br/><small class="text-muted">${log.category}</small>-->
                         ${log.exception ? `<br/><small class="text-danger">Exception: ${log.exception}</small>` : ''}
                     </td>
-                    <td>${log.category}</td>
-                </tr>`;
+                </tr>
+                `;
+
+
         });
 
         tableHtml += `

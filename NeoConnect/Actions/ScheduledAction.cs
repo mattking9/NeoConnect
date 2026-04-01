@@ -24,16 +24,15 @@ namespace NeoConnect
 
             using (_logger.BeginScope(new Dictionary<string, object>
             {
-                ["ActionId"] = Id,
-                ["ActionName"] = Name
+                ["ScheduledActionName"] = Name
             }))
             {
-                _logger.LogInformation($"** {Name} **");
+                _logger.LogInformation($"{Name} Action Starting");
 
 
                 if(IsRunning)
                 {
-                    _logger.LogWarning($"Action {Name} is already running");
+                    _logger.LogWarning($"{Name} Action is already running");
                     return;
                 }
 
@@ -42,15 +41,15 @@ namespace NeoConnect
                 try
                 {
                     await ExecuteAsync(stoppingToken);
-                    _logger.LogInformation($"Action {Name} completed");
+                    _logger.LogInformation($"{Name} Action completed");
                 }
                 catch (OperationCanceledException)
                 {
-                    _logger.LogWarning($"Action {Name} was canceled");
+                    _logger.LogWarning($"{Name} Action was canceled");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Action {Name} failed");
+                    _logger.LogError(ex, $"{Name} Action failed");
                     await _emailService.SendErrorEmail(ex, stoppingToken);
                     throw;
                 }

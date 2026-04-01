@@ -25,9 +25,14 @@ namespace NeoConnect
         /// </summary>
         /// <param name="level">Optional filter by log level (e.g., Information, Warning, Error).</param>
         /// <param name="count">Maximum number of most recent logs to return (default: all).</param>
+        /// <param name="actionId">Optional filter by ActionId scope.</param>
+        /// <param name="actionName">Optional filter by ActionName scope.</param>
         /// <returns>A list of log entries.</returns>
         [HttpGet]
-        public ActionResult<IEnumerable<LogEntry>> GetLogs([FromQuery] string? level = null, [FromQuery] int? count = null)
+        public ActionResult<IEnumerable<LogEntry>> GetLogs(
+            [FromQuery] string? level = null, 
+            [FromQuery] int? count = null,
+            [FromQuery] string? actionName = null)
         {
             var logs = loggerProvider.GetLogs();
 
@@ -36,12 +41,38 @@ namespace NeoConnect
                 logs = logs.Where(l => l.LogLevel.Equals(level, StringComparison.OrdinalIgnoreCase)).ToList();
             }
 
+            if (!string.IsNullOrEmpty(actionName))
+            {
+                logs = logs.Where(l => 
+                    l.Scopes != null && 
+                    l.Scopes.ContainsKey("ScheduledActionName") && 
+                    l.Scopes["ScheduledActionName"].ToString() == actionName).ToList();
+            }
+
             if (count.HasValue && count.Value > 0)
             {
-                logs = logs.OrderByDescending(l => l.Timestamp).Take(count.Value).ToList();
+                logs = logs.OrderBy(l => l.Timestamp).Take(count.Value).ToList();
             }
 
             return Ok(logs);
+        }
+
+        /// <summary>
+        /// Gets a list of distinct action names from log scopes.
+        /// </summary>
+        /// <returns>A list of unique action names.</returns>
+        [HttpGet("action-names")]
+        public ActionResult<IEnumerable<string>> GetActionNames()
+        {
+            var actionNames = loggerProvider.GetLogs()
+                .Where(l => l.Scopes != null && l.Scopes.ContainsKey("ScheduledActionName"))
+                .Select(l => l.Scopes["ScheduledActionName"].ToString())
+                .Where(name => !string.IsNullOrEmpty(name))
+                .Distinct()
+                .OrderBy(name => name)
+                .ToList();
+
+            return Ok(actionNames);
         }
 
         /// <summary>
