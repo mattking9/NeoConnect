@@ -29,8 +29,8 @@ namespace NeoConnect.DataAccess
 
                     return await connection.QueryAsync<DeviceStateEntity>(sql, new
                     {
-                        StartDate = dateToDisplay.Date,
-                        EndDate = dateToDisplay.Date.AddDays(1)
+                        StartDate = dateToDisplay.Date.ToUniversalTime(),
+                        EndDate = dateToDisplay.Date.ToUniversalTime().AddDays(1)
                     });
                 }
                 catch (Exception ex)
