@@ -51,7 +51,7 @@ namespace NeoConnect
 
             if (count.HasValue && count.Value > 0)
             {
-                logs = logs.OrderBy(l => l.Timestamp).Take(count.Value).ToList();
+                logs = logs.OrderByDescending(l => l.Timestamp).Take(count.Value).ToList();
             }
 
             return Ok(logs);

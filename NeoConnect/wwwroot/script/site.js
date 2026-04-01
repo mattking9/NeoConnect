@@ -455,11 +455,11 @@ async function loadLogs() {
             return;
         }
 
-        //logs.sort((a, b) => {
-        //    const dateA = new Date(a.timestamp);
-        //    const dateB = new Date(b.timestamp);
-        //    return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-        //});
+        logs.sort((a, b) => {
+            const dateA = new Date(a.timestamp);
+            const dateB = new Date(b.timestamp);
+            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        });
 
         let tableHtml = `
             <div style="max-height:75vh;overflow-y:scroll">

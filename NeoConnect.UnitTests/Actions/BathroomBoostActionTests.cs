@@ -10,7 +10,7 @@ namespace NeoConnect.UnitTests
     {
         private Mock<IConfiguration> _mockConfig;
         private Mock<IServiceScopeFactory> _mockScopeFactory;
-        private Mock<ILogger> _mockLogger;
+        private Mock<ILogger<BathroomBoostAction>> _mockLogger;
         private Mock<IEmailService> _mockEmailService;
         private Mock<IServiceScope> _mockScope;
         private Mock<IServiceProvider> _mockProvider;
@@ -21,7 +21,7 @@ namespace NeoConnect.UnitTests
         public void Setup()
         {
             _mockConfig = new Mock<IConfiguration>();
-            _mockLogger = new Mock<ILogger>();
+            _mockLogger = new Mock<ILogger<BathroomBoostAction>>();
             _mockEmailService = new Mock<IEmailService>();
             _mockScopeFactory = new Mock<IServiceScopeFactory>();
             _mockScope = new Mock<IServiceScope>();
