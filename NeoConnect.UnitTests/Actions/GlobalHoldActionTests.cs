@@ -77,7 +77,7 @@ namespace NeoConnect.UnitTests
             // Arrange
             var token = new CancellationToken();
             var hours = new List<ForecastHour>();
-            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 6.5, Condition = new ForecastCondition() { Text = "Sunny" } }); }
+            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 6.5, Condition = new ForecastCondition() { Text = "Sunny", Code=1000 } }); }
             var forecastDay = new ForecastDay { Hour = hours };
             var forecast = new Forecast { ForecastDay = new List<ForecastDay> { forecastDay } };
 
@@ -97,7 +97,7 @@ namespace NeoConnect.UnitTests
             // Arrange
             var token = new CancellationToken();
             var hours = new List<ForecastHour>();
-            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 6.4, Condition = new ForecastCondition() { Text = "Sunny" } }); }
+            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 6.4, Condition = new ForecastCondition() { Text = "Sunny", Code=1000 } }); }
             var forecastDay = new ForecastDay { Hour = hours };
             var forecast = new Forecast { ForecastDay = new List<ForecastDay> { forecastDay } };
 
@@ -117,7 +117,7 @@ namespace NeoConnect.UnitTests
             // Arrange
             var token = new CancellationToken();
             var hours = new List<ForecastHour>();
-            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 10.9, Condition = new ForecastCondition() { Text = "Not Sunny" } }); }
+            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 10.9, Condition = new ForecastCondition() { Text = "Not Sunny", Code=9999 } }); }
             var forecastDay = new ForecastDay { Hour = hours };
             var forecast = new Forecast { ForecastDay = new List<ForecastDay> { forecastDay } };
 
@@ -137,7 +137,7 @@ namespace NeoConnect.UnitTests
             // Arrange
             var token = new CancellationToken();
             var hours = new List<ForecastHour>();
-            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 11, Condition = new ForecastCondition() { Text = "Not Sunny" } }); }
+            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 11, Condition = new ForecastCondition() { Text = "Not Sunny", Code = 9999 } }); }
             var forecastDay = new ForecastDay { Hour = hours };
             var forecast = new Forecast { ForecastDay = new List<ForecastDay> { forecastDay } };
 

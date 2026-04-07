@@ -39,7 +39,7 @@ namespace NeoConnect
         [JsonPropertyName("condition")]
         public ForecastCondition Condition { get; set; }        
         
-        public bool IsSunny { get { return Condition != null && Condition.Text == "Sunny";  } }
+        public bool IsSunny { get { return Condition != null && (Condition.Code == 1000 || Condition.Code == 1003);  } } // 1000 = Sunny, 1003 = Partly cloudy
     }
 
     public class ForecastCondition

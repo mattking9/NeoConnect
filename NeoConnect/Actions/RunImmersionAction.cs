@@ -57,6 +57,7 @@ namespace NeoConnect
                     if (solarData.TimeUntilNextUpdate < TimeSpan.Zero)
                     {
                         _logger.LogWarning("Failed to retrieve up-to-date solar data");
+                        isStableExport = false;
                         break;
                     }
 
