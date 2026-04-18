@@ -125,7 +125,7 @@ namespace NeoConnect
 
                 if (!responseContent.Success)
                 {
-                    throw new HttpRequestException($"Failed to turn {(state ? "ON" : "OFF")} Immersion switch. API call completed but state was not changed.");
+                    throw new HttpRequestException($"Failed to turn {(state ? "ON" : "OFF")} Immersion switch. Message: {responseContent.Msg}.");
                 }
             }
             else

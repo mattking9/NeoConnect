@@ -51,7 +51,6 @@ namespace NeoConnect
                 {
                     _logger.LogError(ex, $"{Name} Action failed");
                     await _emailService.SendErrorEmail(ex, stoppingToken);
-                    throw;
                 }
                 finally
                 {
