@@ -1,7 +1,7 @@
 ﻿namespace NeoConnect
 {
     public class SolarData
-    {
+    {        
         public decimal GeneratedPower { get; set; }
 
         public decimal FeedInPower { get; set; }
@@ -12,6 +12,6 @@
 
         public DateTime Timestamp { get; set; }
 
-        public TimeSpan TimeUntilNextUpdate => Timestamp.AddMinutes(5).AddSeconds(10) - DateTime.Now;
+        public TimeSpan TimeUntilNextUpdate => Timestamp.AddSeconds(310) - DateTime.Now;
     }
 }

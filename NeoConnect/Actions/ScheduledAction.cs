@@ -11,6 +11,7 @@ namespace NeoConnect
         public abstract string Description { get; }
         public abstract string? Schedule { get; }
         public bool IsRunning { get; private set; }
+        public bool TestMode { get; set; }
 
         protected ScheduledAction(ILogger<IScheduledAction> logger, IEmailService emailService)
         {

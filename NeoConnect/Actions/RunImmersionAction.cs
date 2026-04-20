@@ -1,8 +1,3 @@
-using System.Diagnostics;
-using System.Text.Json;
-using System.Timers;
-using static System.Collections.Specialized.BitVector32;
-
 namespace NeoConnect
 {
     /// <summary>
@@ -19,7 +14,7 @@ namespace NeoConnect
         private readonly IConfiguration _config;
         private readonly IEmailService _emailService;
         private readonly IServiceScopeFactory _serviceScopeFactory;
-        private readonly ILogger<RunImmersionAction> _logger;
+        private readonly ILogger<RunImmersionAction> _logger;      
 
         public RunImmersionAction(IConfiguration config, IEmailService emailService, IServiceScopeFactory serviceScopeFactory, ILogger<RunImmersionAction> logger)
             : base(logger, emailService)
@@ -52,7 +47,7 @@ namespace NeoConnect
                 var isStableExport = false;                
                 for (int i = 0; i < 3; i++)
                 {
-                    solarData = await solarService.GetRealtimeData(stoppingToken);
+                    solarData = await solarService.GetRealtimeData(stoppingToken);                    
 
                     if (solarData.TimeUntilNextUpdate < TimeSpan.Zero)
                     {
@@ -67,10 +62,10 @@ namespace NeoConnect
                         _logger.LogInformation($"Solar Export is below {FeedInThreshold}kW or Battery Charge is below {BatterySoCThreshold}%");
                         break;
                     }
-                    if (i < 2)
-                    {
+                    if (i < 2 && !TestMode)
+                    {                                                
                         // Wait until next update to solar data (expected to be 5 minutes from last update)
-                        await Task.Delay(solarData.TimeUntilNextUpdate, stoppingToken);
+                        await Task.Delay(solarData.TimeUntilNextUpdate, stoppingToken);                        
                     }
                 }
                 
@@ -92,8 +87,11 @@ namespace NeoConnect
 
                         while (isOn && !stoppingToken.IsCancellationRequested)
                         {
-                            // Wait until next update to solar data (expected to be 5 minutes from last update)
-                            await Task.Delay(solarData.TimeUntilNextUpdate, stoppingToken);
+                            if (!TestMode)
+                            {
+                                // Wait until next update to solar data (expected to be 5 minutes from last update)                            
+                                await Task.Delay(solarData.TimeUntilNextUpdate, stoppingToken);
+                            }
 
                             _logger.LogInformation("Checking Solar Output");
 
@@ -130,7 +128,10 @@ namespace NeoConnect
                                     ], stoppingToken);
 
                                     _logger.LogInformation("Pausing Action for 2 hours");
-                                    await Task.Delay(2 * 60 * 60 * 1000, stoppingToken); // 2 hours
+                                    if (!TestMode)
+                                    {                                        
+                                        await Task.Delay(2 * 60 * 60 * 1000, stoppingToken); // 2 hours
+                                    }
                                 }
                                 else if (isStaleData)
                                 {

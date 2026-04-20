@@ -928,5 +928,451 @@ namespace NeoConnect.UnitTests
                 It.IsAny<int>(),
                 _cts.Token), Times.Once);
         }
+
+        #region SetTemperature Tests
+
+        [Test]
+        public async Task SetTemperature_CallsNeoHubWithCorrectParameters()
+        {
+            // arrange
+            var deviceName = "Living Room";
+            var temperature = 21.5;
+
+            // act
+            await _heatingService.SetTemperature(deviceName, temperature, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.SetTemperature(
+                It.IsAny<INeoConnection>(),
+                deviceName,
+                temperature,
+                _cts.Token), Times.Once);
+        }
+
+        [Test]
+        public async Task SetTemperature_CreatesAndDisposesConnection()
+        {
+            // arrange
+            var deviceName = "Bedroom";
+            var temperature = 19.0;
+            var mockConnection = new Mock<INeoConnection>();
+
+            _mockNeoHubService.Setup(n => n.CreateConnection(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(mockConnection.Object);
+
+            // act
+            await _heatingService.SetTemperature(deviceName, temperature, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.CreateConnection(_cts.Token), Times.Once);
+            mockConnection.Verify(c => c.Dispose(), Times.Once);
+        }
+
+        [Test]
+        public async Task SetTemperature_WithNegativeTemperature_StillCallsNeoHub()
+        {
+            // arrange
+            var deviceName = "Kitchen";
+            var temperature = -5.0;
+
+            // act
+            await _heatingService.SetTemperature(deviceName, temperature, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.SetTemperature(
+                It.IsAny<INeoConnection>(),
+                deviceName,
+                temperature,
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        #endregion
+
+        #region TurnOffHotWater Tests
+
+        [Test]
+        public async Task TurnOffHotWater_WhenHotWaterDeviceExists_CallsBoostOff()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Hot Water" },
+                new() { DeviceId = 2, ZoneName = "Living Room" }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            var hours = 8;
+
+            // act
+            await _heatingService.TurnOffHotWater(hours, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.BoostOff(
+                It.IsAny<INeoConnection>(),
+                It.Is<string[]>(zones => zones.Contains("Hot Water")),
+                hours,
+                _cts.Token), Times.Once);
+        }
+
+        [Test]
+        public async Task TurnOffHotWater_WhenHotWaterDeviceNotFound_LogsAndDoesNotCallBoostOff()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room" },
+                new() { DeviceId = 2, ZoneName = "Bedroom" }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            var hours = 8;
+
+            // act
+            await _heatingService.TurnOffHotWater(hours, _cts.Token);
+
+            // assert
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Device named 'Hot Water' was not found")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+
+            _mockNeoHubService.Verify(n => n.BoostOff(
+                It.IsAny<INeoConnection>(),
+                It.IsAny<string[]>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Test]
+        public async Task TurnOffHotWater_WithDifferentHours_PassesCorrectValue()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Hot Water" }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            var hours = 12;
+
+            // act
+            await _heatingService.TurnOffHotWater(hours, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.BoostOff(
+                It.IsAny<INeoConnection>(),
+                It.IsAny<string[]>(),
+                12,
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test]
+        public async Task TurnOffHotWater_CreatesAndDisposesConnection()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Hot Water" }
+            };
+
+            var mockConnection = new Mock<INeoConnection>();
+            _mockNeoHubService.Setup(n => n.CreateConnection(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(mockConnection.Object);
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.TurnOffHotWater(8, _cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.CreateConnection(_cts.Token), Times.Once);
+            mockConnection.Verify(c => c.Dispose(), Times.Once);
+        }
+
+        #endregion
+
+        #region RefreshDeviceList Tests
+
+        [Test]
+        public async Task RefreshDeviceList_GetsDevicesAndWritesToDatabase()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", ActualTemp = "20", SetTemp = "21" },
+                new() { DeviceId = 2, ZoneName = "Bedroom", ActualTemp = "19", SetTemp = "20" },
+                new() { DeviceId = 3, ZoneName = "Kitchen", ActualTemp = "22", SetTemp = "22" }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.RefreshDeviceList(_cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.GetDevices(
+                It.IsAny<INeoConnection>(),
+                _cts.Token), Times.Once);
+
+            _mockDataService.Verify(d => d.RefreshDeviceList(
+                It.Is<List<NeoDevice>>(list => list.Count == 3)), Times.Once);
+        }
+
+        [Test]
+        public async Task RefreshDeviceList_LogsInformationMessage()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room" }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.RefreshDeviceList(_cts.Token);
+
+            // assert
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Writing device list to database")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+        }
+
+        [Test]
+        public async Task RefreshDeviceList_WithEmptyDeviceList_StillWritesToDatabase()
+        {
+            // arrange
+            var devices = new List<NeoDevice>();
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.RefreshDeviceList(_cts.Token);
+
+            // assert
+            _mockDataService.Verify(d => d.RefreshDeviceList(
+                It.Is<List<NeoDevice>>(list => list.Count == 0)), Times.Once);
+        }
+
+        [Test]
+        public async Task RefreshDeviceList_CreatesAndDisposesConnection()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room" }
+            };
+
+            var mockConnection = new Mock<INeoConnection>();
+            _mockNeoHubService.Setup(n => n.CreateConnection(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(mockConnection.Object);
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.RefreshDeviceList(_cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.CreateConnection(_cts.Token), Times.Once);
+            mockConnection.Verify(c => c.Dispose(), Times.Once);
+        }
+
+        #endregion
+
+        #region LogDeviceStatuses Tests
+
+        [Test]
+        public async Task LogDeviceStatuses_FiltersOutOfflineDevices()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsOffline = false, ActiveProfile = 1, IsStandby = false },
+                new() { DeviceId = 2, ZoneName = "Bedroom", IsOffline = true, ActiveProfile = 1, IsStandby = false }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.LogDeviceStatuses(_cts.Token);
+
+            // assert
+            _mockDataService.Verify(d => d.AddDeviceData(
+                It.Is<IEnumerable<NeoDevice>>(list => list.Count() == 1 && list.First().ZoneName == "Living Room"),
+                0), Times.Once);
+        }
+
+        [Test]
+        public async Task LogDeviceStatuses_FiltersOutStandbyDevices()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsOffline = false, ActiveProfile = 1, IsStandby = false },
+                new() { DeviceId = 2, ZoneName = "Bedroom", IsOffline = false, ActiveProfile = 1, IsStandby = true }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.LogDeviceStatuses(_cts.Token);
+
+            // assert
+            _mockDataService.Verify(d => d.AddDeviceData(
+                It.Is<IEnumerable<NeoDevice>>(list => list.Count() == 1 && list.First().ZoneName == "Living Room"),
+                0), Times.Once);
+        }
+
+        [Test]
+        public async Task LogDeviceStatuses_FiltersOutDevicesWithZeroActiveProfile()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsOffline = false, ActiveProfile = 1, IsStandby = false },
+                new() { DeviceId = 2, ZoneName = "Bedroom", IsOffline = false, ActiveProfile = 0, IsStandby = false }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.LogDeviceStatuses(_cts.Token);
+
+            // assert
+            _mockDataService.Verify(d => d.AddDeviceData(
+                It.Is<IEnumerable<NeoDevice>>(list => list.Count() == 1 && list.First().ZoneName == "Living Room"),
+                0), Times.Once);
+        }
+
+        [Test]
+        public async Task LogDeviceStatuses_LogsInformationMessage()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsOffline = false, ActiveProfile = 1, IsStandby = false }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.LogDeviceStatuses(_cts.Token);
+
+            // assert
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Writing device statuses to database")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+        }
+
+        [Test]
+        public async Task LogDeviceStatuses_PassesZeroAsSecondParameter()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsOffline = false, ActiveProfile = 1, IsStandby = false }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.LogDeviceStatuses(_cts.Token);
+
+            // assert
+            _mockDataService.Verify(d => d.AddDeviceData(
+                It.IsAny<IEnumerable<NeoDevice>>(),
+                0), Times.Once);
+        }
+
+        [Test]
+        public async Task LogDeviceStatuses_WithNoValidDevices_CallsAddDeviceDataWithEmptyList()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsOffline = true, ActiveProfile = 1, IsStandby = false },
+                new() { DeviceId = 2, ZoneName = "Bedroom", IsOffline = false, ActiveProfile = 0, IsStandby = false },
+                new() { DeviceId = 3, ZoneName = "Kitchen", IsOffline = false, ActiveProfile = 1, IsStandby = true }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.LogDeviceStatuses(_cts.Token);
+
+            // assert
+            _mockDataService.Verify(d => d.AddDeviceData(
+                It.Is<IEnumerable<NeoDevice>>(list => list.Count() == 0),
+                0), Times.Once);
+        }
+
+        [Test]
+        public async Task LogDeviceStatuses_CreatesAndDisposesConnection()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsOffline = false, ActiveProfile = 1, IsStandby = false }
+            };
+
+            var mockConnection = new Mock<INeoConnection>();
+            _mockNeoHubService.Setup(n => n.CreateConnection(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(mockConnection.Object);
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.LogDeviceStatuses(_cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.CreateConnection(_cts.Token), Times.Once);
+            mockConnection.Verify(c => c.Dispose(), Times.Once);
+        }
+
+        [Test]
+        public async Task LogDeviceStatuses_PassesCancellationTokenToNeoHub()
+        {
+            // arrange
+            var devices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsOffline = false, ActiveProfile = 1, IsStandby = false }
+            };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(devices);
+
+            // act
+            await _heatingService.LogDeviceStatuses(_cts.Token);
+
+            // assert
+            _mockNeoHubService.Verify(n => n.GetDevices(
+                It.IsAny<INeoConnection>(),
+                _cts.Token), Times.Once);
+        }
+
+        #endregion
     }
 }
