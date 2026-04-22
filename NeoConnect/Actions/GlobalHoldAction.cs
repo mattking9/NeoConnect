@@ -11,7 +11,6 @@ namespace NeoConnect
         private readonly IConfiguration _config;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly ILogger<GlobalHoldAction> _logger;
-        private readonly IEmailService _emailService;
 
         public GlobalHoldAction(IConfiguration config, IServiceScopeFactory serviceScopeFactory, ILogger<GlobalHoldAction> logger, IEmailService emailService)
             : base(logger, emailService)
@@ -19,7 +18,6 @@ namespace NeoConnect
             _config = config;
             _serviceScopeFactory = serviceScopeFactory;
             _logger = logger;
-            _emailService = emailService;
         }
 
         public override string Id => "global_hold";
@@ -55,9 +53,7 @@ namespace NeoConnect
                     return;
                 }
 
-                await heatingService.GlobalHold(-0.5, 1, stoppingToken);
-
-                await _emailService.SendInfoEmail("Holding all devices down 0.5c for 1 hour", stoppingToken);
+                await heatingService.GlobalHold(-0.5, 1, stoppingToken);                
             }
         }             
     }

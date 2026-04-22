@@ -54,6 +54,9 @@ namespace NeoConnect
         [JsonPropertyName("STANDBY")]
         public bool IsStandby { get; set; }
 
+        [JsonPropertyName("AWAY")]
+        public bool IsAway { get; set; }
+
         [JsonPropertyName("HEAT_ON")]
         public bool IsHeating { get; set; }
 

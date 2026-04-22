@@ -10,7 +10,8 @@ namespace NeoConnect
         public string? ZoneName { get; set; }
         public bool IsThermostat { get; set; }        
         public bool IsOffline { get; set; }        
-        public bool IsStandby { get; set; }        
+        public bool IsStandby { get; set; }
+        public bool IsAway { get; set; }
         public bool IsHeating { get; set; }        
         public bool IsPreheating { get; set; }        
         public bool TimerOn { get; set; }
@@ -27,6 +28,7 @@ namespace NeoConnect
                 IsOffline = neoDevice.IsOffline,
                 IsPreheating = neoDevice.IsPreheating,
                 IsStandby = neoDevice.IsStandby,
+                IsAway = neoDevice.IsAway,
                 IsThermostat = neoDevice.IsThermostat,
                 SetTemp = Convert.ToDouble(neoDevice.SetTemp),
                 TimerOn = neoDevice.TimerOn,

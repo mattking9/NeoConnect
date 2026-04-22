@@ -189,7 +189,7 @@ namespace NeoConnect
                     return;
                 }
 
-                if (stat.IsOffline || stat.IsStandby || Convert.ToDouble(stat.SetTemp) <= 12)
+                if (stat.IsOffline || stat.IsStandby || stat.IsAway || Convert.ToDouble(stat.SetTemp) <= 12)
                 {
                     _logger.LogInformation($"{BATHROOM} is in an inactive state.");
                     return;
@@ -250,13 +250,24 @@ namespace NeoConnect
             using (var connection = await _neoHub.CreateConnection(stoppingToken))
             {
                 // fetch all the stats from the NeoHub
-                var devices = (await _neoHub.GetDevices(connection, stoppingToken)).Where(d => d.IsThermostat && !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);
+                var devices = (await _neoHub.GetDevices(connection, stoppingToken)).Where(d => d.IsThermostat && !d.IsOffline && d.ActiveProfile != 0 && !d.IsAway && !d.IsStandby);
 
+                if (devices.Count() == 0)
+                {
+                    _logger.LogInformation("All devices are inactive.");
+                    return;
+                }
+
+                var holdMessages = new List<string>();
                 var holdGroup = "ReduceWhenWarm";
                 foreach (var device in devices)
                 {
-                    await _neoHub.Hold(connection, holdGroup, [device.ZoneName], Convert.ToDouble(device.SetTemp) + adjustment, holdHours, stoppingToken);
-                }                
+                    var holdTemp = Convert.ToDouble(device.SetTemp) + adjustment;
+                    await _neoHub.Hold(connection, holdGroup, [device.ZoneName], holdTemp, holdHours, stoppingToken);
+                    holdMessages.Add($"Holding {device.ZoneName} at {holdTemp}c for {holdHours} hour(s)");
+                }
+
+                await _emailService.SendInfoEmail(holdMessages, stoppingToken);
             }
         }
 
@@ -275,7 +286,7 @@ namespace NeoConnect
         {
             using (var connection = await _neoHub.CreateConnection(stoppingToken))
             {
-                var devices = (await _neoHub.GetDevices(connection, stoppingToken)).Where(d => !d.IsOffline && d.ActiveProfile != 0 && !d.IsStandby);
+                var devices = (await _neoHub.GetDevices(connection, stoppingToken)).Where(d => !d.IsOffline && d.ActiveProfile != 0);
 
                 _logger.LogInformation($"Writing device statuses to database.");
                 _dataService.AddDeviceData(devices, 0);
