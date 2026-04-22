@@ -5,7 +5,11 @@ async function loadDevices(isBackground) {
     const container = document.getElementById('live-data');
 
     if (!isBackground) {
-        container.innerHTML = '<p class="loading">Loading devices...</p>';
+        container.innerHTML = `
+        <div class="spinner-grow m-2" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        `;
     }
 
     try {
@@ -74,6 +78,47 @@ async function loadDevices(isBackground) {
     } catch (error) {
         if (!isBackground) {
             container.innerHTML = `<p class="error">Error loading devices: ${error.message}</p>`;
+        }
+        console.error('Error:', error);
+    }
+}
+
+async function loadWeather(isBackground) {
+    const container = document.getElementById('weather-data');
+
+    if (!isBackground) {
+        container.innerHTML = '&nbsp;';
+    }
+
+    try {
+        const response = await fetch(`${url}/Weather`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const forecast = await response.json();
+
+        if (!forecast || !forecast.forecastday || forecast.forecastday.length === 0) {
+            container.innerHTML = '<p>No weather data available.</p>';
+            return;
+        }
+
+        const today = forecast.forecastday[0];
+        const currentHour = new Date().getHours();
+        const currentHourData = today.hour[currentHour];
+
+        let html = `
+            <div class="col-12">            
+                ${currentHourData.temp_c}&deg;c & ${currentHourData.condition.text}
+            </div>
+        `;
+
+        container.innerHTML = html;
+
+    } catch (error) {
+        if (!isBackground) {
+            container.innerHTML = `<p class="error">Error loading weather: ${error.message}</p>`;
         }
         console.error('Error:', error);
     }

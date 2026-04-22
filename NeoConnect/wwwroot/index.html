@@ -14,13 +14,28 @@
     <nav id="nav-container"></nav>
 
     <main class="content px-4">
+        <div id="weather-data" class="row"></div>
         <div id="live-data" class="row"></div>
     </main>
 
     <script src="script/site.js"></script>
     <script>
         loadNav();
-        window.onload = loadDevices;
+
+        window.addEventListener("load", function () {
+            loadDevices();
+            loadWeather();
+
+            // Refresh devices every 10 seconds
+            setInterval(function() {
+                loadDevices(true);
+            }, 10000);
+
+            // Refresh weather every 60 seconds
+            setInterval(function () {
+                loadWeather(true);
+            }, 60000);
+        }, false);
     </script>
 </body>
 
