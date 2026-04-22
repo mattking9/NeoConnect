@@ -62,6 +62,12 @@
     padding-top: 1rem;
 }
 
+.content-home {
+    min-height:800px;
+    padding-top: 2rem;    
+    background-color: #fdfdff;
+}
+
 .card {
     border-radius: 10px!important;
 }

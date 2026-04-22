@@ -110,7 +110,7 @@ async function loadWeather(isBackground) {
 
         let html = `
             <div class="col-12">            
-                ${currentHourData.temp_c}&deg;c & ${currentHourData.condition.text}
+                <h6>${currentHourData.temp_c}&deg;c & ${currentHourData.condition.text}</h6>
             </div>
         `;
 
