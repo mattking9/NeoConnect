@@ -52,103 +52,149 @@ namespace NeoConnect.UnitTests
         }
 
         [Test]
-        public async Task Action_IsColdDay_DoesNotHold()
+        public void Id_ReturnsExpectedValue()
         {
-            // Arrange
-            var token = new CancellationToken();
-            var hours = new List<ForecastHour>();
-            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 1, Condition = new ForecastCondition() }); }
-            var forecastDay = new ForecastDay { Hour = hours };
-            var forecast = new Forecast { ForecastDay = new List<ForecastDay> { forecastDay } };
-
-            _mockWeatherService.Setup(w => w.GetForecast(token)).ReturnsAsync(forecast);
-
-            // Act
-            await _action.Run(token);
-
-            // Assert
-            _mockWeatherService.Verify(w => w.GetForecast(token), Times.Once);
-            _mockHeatingService.Verify(h => h.GlobalHold(It.IsAny<double>(), It.IsAny<int>(), token), Times.Never);
+            Assert.That(_action.Id, Is.EqualTo("global_hold"));
         }
 
         [Test]
-        public async Task Action_IsSunnyDayAboveThreshold_Holds()
+        public void Description_ReturnsExpectedValue()
         {
-            // Arrange
-            var token = new CancellationToken();
-            var hours = new List<ForecastHour>();
-            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 6.5, Condition = new ForecastCondition() { Text = "Sunny", Code=1000 } }); }
-            var forecastDay = new ForecastDay { Hour = hours };
-            var forecast = new Forecast { ForecastDay = new List<ForecastDay> { forecastDay } };
-
-            _mockWeatherService.Setup(w => w.GetForecast(token)).ReturnsAsync(forecast);
-
-            // Act
-            await _action.Run(token);
-
-            // Assert
-            _mockWeatherService.Verify(w => w.GetForecast(token), Times.Once);
-            _mockHeatingService.Verify(h => h.GlobalHold(It.IsAny<double>(), It.IsAny<int>(), token), Times.Once);
+            Assert.That(_action.Description, Is.EqualTo("Holds all thermostats at 0.5° below their set temperature if it is due to be warm and/or sunny in 1 hour's time."));
         }
 
         [Test]
-        public async Task Action_IsSunnyDayBelowThreshold_DoesNotHold()
+        public async Task Action_WhenForecastBelowThresholdAndNotSunny_DoesNotCallGlobalHold()
         {
-            // Arrange
-            var token = new CancellationToken();
-            var hours = new List<ForecastHour>();
-            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 6.4, Condition = new ForecastCondition() { Text = "Sunny", Code=1000 } }); }
-            var forecastDay = new ForecastDay { Hour = hours };
-            var forecast = new Forecast { ForecastDay = new List<ForecastDay> { forecastDay } };
+            var forecast = CreateWeatherResponse(10.0, 10.5, false, false);
+            _mockWeatherService.Setup(w => w.GetForecast(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(forecast);
 
-            _mockWeatherService.Setup(w => w.GetForecast(token)).ReturnsAsync(forecast);
+            await _action.Run(CancellationToken.None);
 
-            // Act
-            await _action.Run(token);
-
-            // Assert
-            _mockWeatherService.Verify(w => w.GetForecast(token), Times.Once);
-            _mockHeatingService.Verify(h => h.GlobalHold(It.IsAny<double>(), It.IsAny<int>(), token), Times.Never);
+            _mockHeatingService.Verify(h => h.GlobalHold(It.IsAny<double>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Test]
-        public async Task Action_IsWarmDayBelowThreshold_DoesNotHold()
+        public async Task Action_WhenForecastAboveThresholdAndNotSunny_CallsGlobalHold()
         {
-            // Arrange
-            var token = new CancellationToken();
-            var hours = new List<ForecastHour>();
-            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 10.9, Condition = new ForecastCondition() { Text = "Not Sunny", Code=9999 } }); }
-            var forecastDay = new ForecastDay { Hour = hours };
-            var forecast = new Forecast { ForecastDay = new List<ForecastDay> { forecastDay } };
+            var forecast = CreateWeatherResponse(12.0, 12.0, false, false);
+            _mockWeatherService.Setup(w => w.GetForecast(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(forecast);
 
-            _mockWeatherService.Setup(w => w.GetForecast(token)).ReturnsAsync(forecast);
+            await _action.Run(CancellationToken.None);
 
-            // Act
-            await _action.Run(token);
-
-            // Assert
-            _mockWeatherService.Verify(w => w.GetForecast(token), Times.Once);
-            _mockHeatingService.Verify(h => h.GlobalHold(It.IsAny<double>(), It.IsAny<int>(), token), Times.Never);
+            _mockHeatingService.Verify(h => h.GlobalHold(-0.5, 1, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
-        public async Task Action_IsWarmDayAboveThreshold_Holds()
+        public async Task Action_WhenForecastBelowSunnyThresholdButSunny_CallsGlobalHold()
         {
-            // Arrange
-            var token = new CancellationToken();
+            var forecast = CreateWeatherResponse(7.0, 8.0, true, false);
+            _mockWeatherService.Setup(w => w.GetForecast(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(forecast);
+
+            await _action.Run(CancellationToken.None);
+
+            _mockHeatingService.Verify(h => h.GlobalHold(-0.5, 1, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test]
+        public async Task Action_WhenForecastBelowSunnyThresholdAndNotSunny_DoesNotCallGlobalHold()
+        {
+            var forecast = CreateWeatherResponse(6.0, 6.0, false, false);
+            _mockWeatherService.Setup(w => w.GetForecast(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(forecast);
+
+            await _action.Run(CancellationToken.None);
+
+            _mockHeatingService.Verify(h => h.GlobalHold(It.IsAny<double>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Test]
+        public async Task Action_WhenNextHourIsSunny_UsesSunnyThreshold()
+        {
+            var forecast = CreateWeatherResponse(7.0, 6.0, true, false);
+            _mockWeatherService.Setup(w => w.GetForecast(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(forecast);
+
+            await _action.Run(CancellationToken.None);
+
+            _mockHeatingService.Verify(h => h.GlobalHold(-0.5, 1, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test]
+        public async Task Action_WhenNextNextHourIsSunny_UsesSunnyThreshold()
+        {
+            var forecast = CreateWeatherResponse(6.0, 7.0, false, true);
+            _mockWeatherService.Setup(w => w.GetForecast(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(forecast);
+
+            await _action.Run(CancellationToken.None);
+
+            _mockHeatingService.Verify(h => h.GlobalHold(-0.5, 1, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test]
+        public async Task Action_UsesAverageOfNextTwoHours()
+        {
+            var forecast = CreateWeatherResponse(11.0, 12.0, false, false);
+            _mockWeatherService.Setup(w => w.GetForecast(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(forecast);
+
+            await _action.Run(CancellationToken.None);
+
+            _mockHeatingService.Verify(h => h.GlobalHold(-0.5, 1, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test]
+        public async Task Action_PassesCancellationToken()
+        {
+            var cts = new CancellationTokenSource();
+            var forecast = CreateWeatherResponse(15.0, 15.0, false, false);
+            _mockWeatherService.Setup(w => w.GetForecast(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(forecast);
+
+            await _action.Run(cts.Token);
+
+            _mockWeatherService.Verify(w => w.GetForecast(cts.Token), Times.Once);
+            _mockHeatingService.Verify(h => h.GlobalHold(-0.5, 1, cts.Token), Times.Once);
+        }
+
+        private WeatherResponse CreateWeatherResponse(double nextHourTemp, double nextNextHourTemp, bool nextHourSunny, bool nextNextHourSunny)
+        {
+            var currentHour = DateTime.Now.Hour;
+            var nextHourIndex = currentHour < 23 ? currentHour + 1 : 23;
+            var nextNextHourIndex = currentHour < 22 ? currentHour + 2 : 23;
+
             var hours = new List<ForecastHour>();
-            for (int i = 0; i < 24; i++) { hours.Add(new ForecastHour() { Temp = 11, Condition = new ForecastCondition() { Text = "Not Sunny", Code = 9999 } }); }
-            var forecastDay = new ForecastDay { Hour = hours };
-            var forecast = new Forecast { ForecastDay = new List<ForecastDay> { forecastDay } };
+            for (int i = 0; i <= 23; i++)
+            {
+                var hour = new ForecastHour
+                {
+                    Temp = i == nextHourIndex ? nextHourTemp : (i == nextNextHourIndex ? nextNextHourTemp : 10.0),
+                    Condition = new Condition
+                    {
+                        Code = (i == nextHourIndex && nextHourSunny) || (i == nextNextHourIndex && nextNextHourSunny) ? 1000 : 1006,
+                        Text = (i == nextHourIndex && nextHourSunny) || (i == nextNextHourIndex && nextNextHourSunny) ? "Sunny" : "Cloudy"
+                    }
+                };
+                hours.Add(hour);
+            }
 
-            _mockWeatherService.Setup(w => w.GetForecast(token)).ReturnsAsync(forecast);
-
-            // Act
-            await _action.Run(token);
-
-            // Assert
-            _mockWeatherService.Verify(w => w.GetForecast(token), Times.Once);
-            _mockHeatingService.Verify(h => h.GlobalHold(It.IsAny<double>(), It.IsAny<int>(), token), Times.Once);
+            return new WeatherResponse
+            {
+                Forecast = new Forecast
+                {
+                    ForecastDay = new List<ForecastDay>
+                    {
+                        new ForecastDay
+                        {
+                            Hour = hours
+                        }
+                    }
+                }
+            };
         }
     }
 }

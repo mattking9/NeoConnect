@@ -21,7 +21,7 @@ namespace NeoConnect
             _location = config.GetValue<string>("WeatherApi:Location") ?? throw new ArgumentNullException("Config value for WeatherApi:Location is required");
         }
 
-        public async Task<Forecast> GetForecast(CancellationToken stoppingToken)
+        public async Task<WeatherResponse> GetForecast(CancellationToken stoppingToken)
         {  
             _logger.LogInformation("Getting weather forecast.");
 
@@ -46,7 +46,7 @@ namespace NeoConnect
 
                     _logger.LogInformation("Weather forecast successfully retrieved.");
 
-                    return weatherResponse.Forecast;
+                    return weatherResponse;
                 }
             }
         }

@@ -26,15 +26,15 @@
             loadDevices();
             loadWeather();
 
-            // Refresh devices every 10 seconds
+            // Refresh devices every 15 seconds
             setInterval(function() {
                 loadDevices(true);
-            }, 10000);
+            }, 15000);
 
-            // Refresh weather every 60 seconds
+            // Refresh weather every 10 minutes
             setInterval(function () {
                 loadWeather(true);
-            }, 60000);
+            }, 600000);
         }, false);
     </script>
 </body>

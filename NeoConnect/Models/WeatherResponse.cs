@@ -4,6 +4,9 @@ namespace NeoConnect
 {
     public class WeatherResponse
     {
+        [JsonPropertyName("current")]
+        public Current Current { get; set; }
+
         [JsonPropertyName("forecast")]
         public Forecast Forecast { get; set; }
     }
@@ -12,6 +15,15 @@ namespace NeoConnect
     {
         [JsonPropertyName("forecastday")]
         public List<ForecastDay> ForecastDay { get; set; } = new List<ForecastDay>();
+    }
+
+    public class Current
+    {
+        [JsonPropertyName("temp_c")]
+        public double Temp { get; set; }
+
+        [JsonPropertyName("condition")]
+        public Condition Condition { get; set; }
     }
 
     public class ForecastDay
@@ -37,12 +49,12 @@ namespace NeoConnect
         public double Temp { get; set; }
 
         [JsonPropertyName("condition")]
-        public ForecastCondition Condition { get; set; }        
+        public Condition Condition { get; set; }        
         
         public bool IsSunny { get { return Condition != null && (Condition.Code == 1000 || Condition.Code == 1003);  } } // 1000 = Sunny, 1003 = Partly cloudy
     }
 
-    public class ForecastCondition
+    public class Condition
     {
         [JsonPropertyName("text")]
         public string Text { get; set; }

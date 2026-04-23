@@ -35,7 +35,8 @@ namespace NeoConnect
                 var heatingService = scope.ServiceProvider.GetRequiredService<IHeatingService>();
                 var weatherService = scope.ServiceProvider.GetRequiredService<IWeatherService>();
 
-                var forecast = await weatherService.GetForecast(stoppingToken);
+                var response = await weatherService.GetForecast(stoppingToken);
+                var forecast = response.Forecast;
 
                 // get the forecast conditions for the next full hour
                 var forecastNextHour = forecast.ForecastDay[0].Hour[DateTime.Now.Hour < 23 ? DateTime.Now.Hour + 1 : 23];

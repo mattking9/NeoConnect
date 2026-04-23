@@ -94,14 +94,14 @@ namespace NeoConnect.UnitTests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.ForecastDay, Is.Not.Null);            
-            Assert.That(result.ForecastDay.Count, Is.EqualTo(1));
-            Assert.That(result.ForecastDay[0].Day.AverageTemp, Is.EqualTo(20.5m));
-            Assert.That(result.ForecastDay[0].Hour.Count, Is.EqualTo(2));
-            Assert.That(result.ForecastDay[0].Hour[0].Temp, Is.EqualTo(18.5m));
-            Assert.That(result.ForecastDay[0].Hour[0].Time, Is.EqualTo("00:00"));
-            Assert.That(result.ForecastDay[0].Hour[1].Temp, Is.EqualTo(18.0m));
-            Assert.That(result.ForecastDay[0].Hour[1].Time, Is.EqualTo("01:00"));
+            Assert.That(result.Forecast.ForecastDay, Is.Not.Null);            
+            Assert.That(result.Forecast.ForecastDay.Count, Is.EqualTo(1));
+            Assert.That(result.Forecast.ForecastDay[0].Day.AverageTemp, Is.EqualTo(20.5m));
+            Assert.That(result.Forecast.ForecastDay[0].Hour.Count, Is.EqualTo(2));
+            Assert.That(result.Forecast.ForecastDay[0].Hour[0].Temp, Is.EqualTo(18.5m));
+            Assert.That(result.Forecast.ForecastDay[0].Hour[0].Time, Is.EqualTo("00:00"));
+            Assert.That(result.Forecast.ForecastDay[0].Hour[1].Temp, Is.EqualTo(18.0m));
+            Assert.That(result.Forecast.ForecastDay[0].Hour[1].Time, Is.EqualTo("01:00"));
         }
 
         [Test]

@@ -97,20 +97,16 @@ async function loadWeather(isBackground) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const forecast = await response.json();
+        const current = await response.json();
 
-        if (!forecast || !forecast.forecastday || forecast.forecastday.length === 0) {
+        if (!current) {
             container.innerHTML = '<p>No weather data available.</p>';
             return;
         }
 
-        const today = forecast.forecastday[0];
-        const currentHour = new Date().getHours();
-        const currentHourData = today.hour[currentHour];
-
         let html = `
             <div class="col-12">            
-                <h6>${currentHourData.temp_c}&deg;c & ${currentHourData.condition.text}</h6>
+                <h6>${current.temp_c}&deg;c & ${current.condition.text}</h6>
             </div>
         `;
 
@@ -452,10 +448,6 @@ async function setTemp(deviceName, temp) {
         },
         body: JSON.stringify({ zoneName: deviceName, setTemp: temp }),
     });
-
-    for (let i = 0; i < btns.length; i++) {
-        btns[i].disabled = false;
-    }
 
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

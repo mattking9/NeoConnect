@@ -27,10 +27,10 @@ namespace NeoConnect
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>The current weather conditions.</returns>
         [HttpGet]
-        public async Task<Forecast> GetCurrentForecast(CancellationToken cancellationToken)
+        public async Task<Current> GetCurrentWeather(CancellationToken cancellationToken)
         {
             var forecast = await _weatherService.GetForecast(cancellationToken);
-            return forecast;
+            return forecast.Current;
         }
     }
 }
