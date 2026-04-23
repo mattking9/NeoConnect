@@ -136,5 +136,98 @@ namespace NeoConnect.UnitTests
             // Act & Assert
             Assert.ThrowsAsync<JsonException>(async () => await _weatherService.GetForecast(_cts.Token));
         }
+
+        [Test]
+        public async Task GetForecast_WhenCalledTwiceWithinCachePeriod_MakesOnlyOneHttpCall()
+        {
+            // Arrange
+            var mockResponseContent = @"
+            {
+                ""forecast"": {
+                    ""forecastday"": [
+                        {   
+                            ""date"":""2025-09-04"", 
+                            ""day"": {
+                                ""avgtemp_c"":20.5
+                            },
+                            ""hour"": [
+                                {
+                                    ""time"":""00:00"",
+                                    ""temp_c"":18.5
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }";
+
+            _mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(mockResponseContent, Encoding.UTF8, "application/json")
+                });
+
+            // Act
+            var result1 = await _weatherService.GetForecast(_cts.Token);
+            var result2 = await _weatherService.GetForecast(_cts.Token);
+
+            // Assert
+            Assert.That(result1, Is.Not.Null);
+            Assert.That(result2, Is.Not.Null);
+            Assert.That(result1.Forecast.ForecastDay[0].Day.AverageTemp, Is.EqualTo(20.5m));
+            Assert.That(result2.Forecast.ForecastDay[0].Day.AverageTemp, Is.EqualTo(20.5m));
+
+            // Verify HTTP call was made only once
+            _mockHttpMessageHandler.Protected()
+                .Verify("SendAsync", Times.Once(), ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
+        }
+
+        [Test]
+        public async Task GetForecast_WhenCalledMultipleTimesWithinCachePeriod_ReturnsSameCachedInstance()
+        {
+            // Arrange
+            var mockResponseContent = @"
+            {
+                ""forecast"": {
+                    ""forecastday"": [
+                        {   
+                            ""date"":""2025-09-04"", 
+                            ""day"": {
+                                ""avgtemp_c"":20.5
+                            },
+                            ""hour"": [
+                                {
+                                    ""time"":""00:00"",
+                                    ""temp_c"":18.5
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }";
+
+            _mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(mockResponseContent, Encoding.UTF8, "application/json")
+                });
+
+            // Act
+            var result1 = await _weatherService.GetForecast(_cts.Token);
+            var result2 = await _weatherService.GetForecast(_cts.Token);
+            var result3 = await _weatherService.GetForecast(_cts.Token);
+
+            // Assert - all results should be the same cached instance
+            Assert.That(result2, Is.SameAs(result1));
+            Assert.That(result3, Is.SameAs(result1));
+
+            // Verify HTTP call was made only once
+            _mockHttpMessageHandler.Protected()
+                .Verify("SendAsync", Times.Once(), ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
+        }
     }
 }

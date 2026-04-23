@@ -46,7 +46,7 @@ namespace NeoConnect
 
                 // Set the temperature threshold for holding.
                 // If it's forecast to be sunny in the next couple of hours, we can be more aggressive with holding as direct sun will make the house warmer.
-                var threshold = isSunny ? 6.5 : 11;
+                var threshold = isSunny ? 6.5 : 10.5;
 
                 if (forecastTemp < threshold)
                 {
