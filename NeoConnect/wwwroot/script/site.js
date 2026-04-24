@@ -33,18 +33,18 @@ async function loadDevices(isBackground) {
                 <div id=${device.deviceId} class="col-6">
                     <div class="card text-center mt-3">
                         <div class="card-body">
-                            <p class="card-title truncate">${device.zoneName}</p>
-                            <p class="card-text">`;
+                            <p class="card-title text-muted truncate">${device.zoneName}</p>
+                            <p class="card-text font-weight-bolder">`;
 
             if (device.isThermostat) {
                 html += `
-                                <span class="${device.isHeating ? "on" : device.isPreheating ? "pre" : ""}" style="font-size:2em;">
-                                    ${device.actualTemp}&deg;
+                                <span class="${device.isHeating ? "on" : device.isPreheating ? "pre" : ""}" style="font-size:1.6em;">
+                                    ${device.actualTemp.toFixed(1) }&deg;
                                 </span>`;
             }
             else {
                 html += `
-                                <span class="${device.timerOn ? "on" : ""}" style="font-size:2em;">
+                                <span class="${device.timerOn ? "on" : ""}" style="font-size:1.6em;">
                                 ${device.timerOn ? "ON" : "OFF"}
                                 </span>`;
             }
@@ -106,7 +106,7 @@ async function loadWeather(isBackground) {
 
         let html = `
             <div class="col-12">            
-                <h6>${current.temp_c}&deg;c & ${current.condition.text}</h6>
+                <h3 class="truncate">${current.temp_c}&deg; <small class="text-muted">${current.condition.text}</small></h3>
             </div>
         `;
 
