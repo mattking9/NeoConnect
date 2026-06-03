@@ -26,7 +26,7 @@ namespace NeoConnect
 
         public override string? Schedule => _config["ReportDataCollectionSchedule"];
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken, bool IsManualTrigger = false)
         {            
             using (var scope = _serviceScopeFactory.CreateScope())
             {

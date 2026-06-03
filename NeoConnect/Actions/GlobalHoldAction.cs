@@ -1,4 +1,3 @@
-
 namespace NeoConnect
 {
     /// <summary>
@@ -28,7 +27,7 @@ namespace NeoConnect
 
         public override string? Schedule => _config["HoldSchedule"];
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken, bool isManualTrigger = false)
         {
             using (var scope = _serviceScopeFactory.CreateScope())
             {

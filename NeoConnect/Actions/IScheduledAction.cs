@@ -7,6 +7,6 @@ namespace NeoConnect
         string Description { get; }
         string? Schedule { get; }
         bool IsRunning { get; }
-        Task Run(CancellationToken stoppingToken);
+        Task Run(CancellationToken stoppingToken, bool isManualTrigger = false);
     }
 }

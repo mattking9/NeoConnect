@@ -8,7 +8,7 @@ namespace NeoConnect
     /// operations.</remarks>
     public class RunImmersionAction : ScheduledAction
     {
-        private const decimal FeedInThreshold = 3.2M;
+        private const decimal ExportThreshold = 3.1M;
         private const decimal BatterySoCThreshold = 90;
 
         private readonly IConfiguration _config;
@@ -33,7 +33,7 @@ namespace NeoConnect
 
         public override string? Schedule => _config["RunImmersionSchedule"];
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken, bool isManualTrigger = false)
         {            
             using (var scope = _serviceScopeFactory.CreateScope())
             {
@@ -56,12 +56,21 @@ namespace NeoConnect
                         break;
                     }
 
-                    isStableExport = (solarData.FeedInPower >= FeedInThreshold && solarData.SoC >= BatterySoCThreshold);
-                    if (!isStableExport)
-                    {
-                        _logger.LogInformation($"Solar Export is below {FeedInThreshold}kW or Battery Charge is below {BatterySoCThreshold}%");
+                    // If action was triggered manually, don't test for stable export, just turn on and monitor.
+                    if (isManualTrigger)
+                    {                        
+                        isStableExport = true;
                         break;
                     }
+
+                    isStableExport = (solarData.FeedInPower >= ExportThreshold && solarData.SoC >= BatterySoCThreshold);
+
+                    if (!isStableExport)
+                    {
+                        _logger.LogInformation($"Solar Export is below {ExportThreshold}kW or Battery Charge is below {BatterySoCThreshold}%");
+                        break;
+                    }                                          
+
                     if (i < 2 && !TestMode)
                     {                                                
                         // Wait until next update to solar data (expected to be 5 minutes from last update)

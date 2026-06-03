@@ -1,4 +1,3 @@
-
 namespace NeoConnect
 {
     public abstract class ScheduledAction : IScheduledAction
@@ -10,7 +9,7 @@ namespace NeoConnect
         public abstract string Name { get; }
         public abstract string Description { get; }
         public abstract string? Schedule { get; }
-        public bool IsRunning { get; private set; }
+        public bool IsRunning { get; private set; }        
         public bool TestMode { get; set; }
 
         protected ScheduledAction(ILogger<IScheduledAction> logger, IEmailService emailService)
@@ -19,19 +18,17 @@ namespace NeoConnect
             _emailService = emailService;
         }
 
-        public async Task Run(CancellationToken stoppingToken)
+        public async Task Run(CancellationToken stoppingToken, bool isManualTrigger = false)
         {
-            var correlationId = Guid.NewGuid().ToString();
-
             using (_logger.BeginScope(new Dictionary<string, object>
             {
                 ["ScheduledActionName"] = Name
             }))
             {
-                _logger.LogInformation($"{Name} Action Starting");
+                _logger.LogInformation($"{Name} Action Starting{(isManualTrigger ? " (manual)" : "")}");
 
 
-                if(IsRunning)
+                if (IsRunning)
                 {
                     _logger.LogWarning($"{Name} Action is already running");
                     return;
@@ -41,7 +38,7 @@ namespace NeoConnect
 
                 try
                 {
-                    await ExecuteAsync(stoppingToken);
+                    await ExecuteAsync(stoppingToken, isManualTrigger);
                     _logger.LogInformation($"{Name} Action completed");
                 }
                 catch (OperationCanceledException)
@@ -60,6 +57,6 @@ namespace NeoConnect
             }
         }
 
-        protected abstract Task ExecuteAsync(CancellationToken stoppingToken);
+        protected abstract Task ExecuteAsync(CancellationToken stoppingToken, bool IsManualTrigger);
     }
 }
