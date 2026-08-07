@@ -11,20 +11,19 @@ namespace NeoConnect
             _deviceRepository = deviceRepository;
         }
 
-        public void RefreshDeviceList(IEnumerable<NeoDevice> devices)
+        public void RefreshDeviceList(IEnumerable<Device> devices)
         {
             _deviceRepository.AddDevices(devices.Select(d => new DeviceEntity() { DeviceId = d.DeviceId, DeviceName = d.ZoneName }));
         }
 
-        public void AddDeviceData(IEnumerable<NeoDevice> devices, double outsideTemperature)
-        {
-            var deviceList = devices as IList<NeoDevice> ?? devices.ToList();
-            var deviceStates = new List<DeviceStateEntity>(capacity: deviceList.Count);
+        public void AddDeviceData(IEnumerable<Device> devices, double outsideTemperature)
+        {            
+            var deviceStates = new List<DeviceStateEntity>(capacity: devices.Count());
 
-            foreach (var device in deviceList)
+            foreach (var device in devices)
             {
-                double setTemp = double.TryParse(device.SetTemp, out double st) ? st : 0.0;
-                double actualTemp = double.TryParse(device.ActualTemp, out double at) ? at : 0.0;
+                double setTemp = device.SetTemp;
+                double actualTemp = device.ActualTemp;
 
                 deviceStates.Add(new DeviceStateEntity
                 {

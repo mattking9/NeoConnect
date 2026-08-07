@@ -5,8 +5,8 @@ namespace NeoConnect
 {
     public interface IDataService
     {
-        void AddDeviceData(IEnumerable<NeoDevice> devices, double outsideTemperature);        
+        void AddDeviceData(IEnumerable<Device> devices, double outsideTemperature);        
         Task<IEnumerable<DeviceStateEntity>> GetDeviceData(DateTime dateToDisplay);
-        void RefreshDeviceList(IEnumerable<NeoDevice> devices);
+        void RefreshDeviceList(IEnumerable<Device> devices);
     }
 }

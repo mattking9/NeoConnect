@@ -7,15 +7,17 @@ namespace NeoConnect
     {
         private readonly ILogger<HeatingService> _logger;
         private readonly INeoHubService _neoHub;
+        private readonly IImmersionService _immersionService;
         private readonly IEmailService _emailService;
         private readonly IDataService _dataService;
 
-        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IEmailService emailService, IDataService dataService)
+        public HeatingService(ILogger<HeatingService> logger, INeoHubService neoHub, IEmailService emailService, IDataService dataService, IImmersionService immersionService)
         {
             _logger = logger;
             _neoHub = neoHub;
             _emailService = emailService;
             _dataService = dataService;
+            _immersionService = immersionService;
         }
 
         /// <summary>
@@ -275,7 +277,15 @@ namespace NeoConnect
         {
             using (var connection = await _neoHub.CreateConnection(stoppingToken))
             {
-                var devices = (await _neoHub.GetDevices(connection, stoppingToken));
+                // Add Heatmiser Neo devices
+                var devices = (await _neoHub.GetDevices(connection, stoppingToken)).Select(Device.FromNeoDevice).ToList();
+
+                // Add Immersion device
+                var immersion = _immersionService.GetDevice();
+                if (immersion != null)
+                {
+                    devices.Add(immersion);
+                }
 
                 _logger.LogInformation($"Writing device list to database.");
                 _dataService.RefreshDeviceList(devices);
@@ -286,7 +296,16 @@ namespace NeoConnect
         {
             using (var connection = await _neoHub.CreateConnection(stoppingToken))
             {
-                var devices = (await _neoHub.GetDevices(connection, stoppingToken)).Where(d => !d.IsOffline && d.ActiveProfile != 0);
+                var devices = (await _neoHub.GetDevices(connection, stoppingToken)).Where(d => !d.IsOffline && d.ActiveProfile != 0)
+                    .Select(Device.FromNeoDevice)
+                    .ToList();
+
+                // Include Immersion
+                var immersion = _immersionService.GetDevice();
+                if (immersion != null)
+                {
+                    devices.Add(immersion);
+                }
 
                 _logger.LogInformation($"Writing device statuses to database.");
                 _dataService.AddDeviceData(devices, 0);

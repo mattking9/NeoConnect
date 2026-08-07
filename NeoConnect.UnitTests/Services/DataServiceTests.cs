@@ -22,11 +22,11 @@ namespace NeoConnect.UnitTests.Services
         public void RefreshDeviceList_WithMultipleDevices_CallsRepositoryWithCorrectData()
         {
             // arrange
-            var devices = new List<NeoDevice>
+            var devices = new List<Device>
             {
-                new NeoDevice { DeviceId = 1, ZoneName = "Living Room" },
-                new NeoDevice { DeviceId = 2, ZoneName = "Bedroom" },
-                new NeoDevice { DeviceId = 3, ZoneName = "Kitchen" }
+                new Device { DeviceId = 1, ZoneName = "Living Room" },
+                new Device { DeviceId = 2, ZoneName = "Bedroom" },
+                new Device { DeviceId = 3, ZoneName = "Kitchen" }
             };
 
             DeviceEntity[] capturedEntities = null;
@@ -52,9 +52,9 @@ namespace NeoConnect.UnitTests.Services
         public void RefreshDeviceList_WithSingleDevice_CallsRepositoryWithCorrectData()
         {
             // arrange
-            var devices = new List<NeoDevice>
+            var devices = new List<Device>
             {
-                new NeoDevice { DeviceId = 10, ZoneName = "Bathroom" }
+                new Device { DeviceId = 10, ZoneName = "Bathroom" }
             };
 
             DeviceEntity[] capturedEntities = null;
@@ -76,7 +76,7 @@ namespace NeoConnect.UnitTests.Services
         public void RefreshDeviceList_WithEmptyList_CallsRepositoryWithEmptyCollection()
         {
             // arrange
-            var devices = new List<NeoDevice>();
+            var devices = new List<Device>();
 
             DeviceEntity[] capturedEntities = null;
             _mockDeviceRepository.Setup(r => r.AddDevices(It.IsAny<IEnumerable<DeviceEntity>>()))
@@ -95,10 +95,10 @@ namespace NeoConnect.UnitTests.Services
         public void RefreshDeviceList_WithSpecialCharactersInZoneName_MapsCorrectly()
         {
             // arrange
-            var devices = new List<NeoDevice>
+            var devices = new List<Device>
             {
-                new NeoDevice { DeviceId = 1, ZoneName = "Master's Bedroom" },
-                new NeoDevice { DeviceId = 2, ZoneName = "Kid's Room #1" }
+                new Device { DeviceId = 1, ZoneName = "Master's Bedroom" },
+                new Device { DeviceId = 2, ZoneName = "Kid's Room #1" }
             };
 
             DeviceEntity[] capturedEntities = null;
@@ -121,25 +121,25 @@ namespace NeoConnect.UnitTests.Services
         public void AddDeviceData_WithMultipleThermostats_CallsRepositoryWithCorrectData()
         {
             // arrange
-            var devices = new List<NeoDevice>
+            var devices = new List<Device>
             {
-                new NeoDevice 
+                new Device 
                 { 
                     DeviceId = 1, 
                     ZoneName = "Living Room", 
                     IsThermostat = true,
-                    SetTemp = "20.5",
-                    ActualTemp = "19.5",
+                    SetTemp = 20.5,
+                    ActualTemp = 19.5,
                     IsHeating = true,
                     IsPreheating = false
                 },
-                new NeoDevice 
+                new Device 
                 { 
                     DeviceId = 2, 
                     ZoneName = "Bedroom", 
                     IsThermostat = true,
-                    SetTemp = "18.0",
-                    ActualTemp = "17.5",
+                    SetTemp = 18.0,
+                    ActualTemp = 17.5,
                     IsHeating = false,
                     IsPreheating = true
                 }
@@ -171,109 +171,21 @@ namespace NeoConnect.UnitTests.Services
             Assert.That(capturedStates[1].HeatOn, Is.False);
             Assert.That(capturedStates[1].PreheatActive, Is.True);
             Assert.That(capturedStates[1].OutsideTemp, Is.EqualTo(12.5));
-        }        
-
-        [Test]
-        public void AddDeviceData_WithInvalidTemperatureStrings_UsesZeroAsDefault()
-        {
-            // arrange
-            var devices = new List<NeoDevice>
-            {
-                new NeoDevice 
-                { 
-                    DeviceId = 1, 
-                    ZoneName = "Living Room", 
-                    IsThermostat = true,
-                    SetTemp = "invalid",
-                    ActualTemp = "not a number"
-                }
-            };
-
-            DeviceStateEntity[] capturedStates = null;
-            _mockDeviceRepository.Setup(r => r.AddDeviceData(It.IsAny<IEnumerable<DeviceStateEntity>>()))
-                .Callback<IEnumerable<DeviceStateEntity>>(states => capturedStates = states.ToArray());
-
-            // act
-            _dataService.AddDeviceData(devices, 10.0);
-
-            // assert
-            Assert.That(capturedStates, Is.Not.Null);
-            Assert.That(capturedStates.Length, Is.EqualTo(1));
-            Assert.That(capturedStates[0].SetTemp, Is.EqualTo(0.0));
-            Assert.That(capturedStates[0].ActualTemp, Is.EqualTo(0.0));
-        }
-
-        [Test]
-        public void AddDeviceData_WithEmptyTemperatureStrings_UsesZeroAsDefault()
-        {
-            // arrange
-            var devices = new List<NeoDevice>
-            {
-                new NeoDevice 
-                { 
-                    DeviceId = 1, 
-                    ZoneName = "Living Room", 
-                    IsThermostat = true,
-                    SetTemp = "",
-                    ActualTemp = ""
-                }
-            };
-
-            DeviceStateEntity[] capturedStates = null;
-            _mockDeviceRepository.Setup(r => r.AddDeviceData(It.IsAny<IEnumerable<DeviceStateEntity>>()))
-                .Callback<IEnumerable<DeviceStateEntity>>(states => capturedStates = states.ToArray());
-
-            // act
-            _dataService.AddDeviceData(devices, 10.0);
-
-            // assert
-            Assert.That(capturedStates, Is.Not.Null);
-            Assert.That(capturedStates[0].SetTemp, Is.EqualTo(0.0));
-            Assert.That(capturedStates[0].ActualTemp, Is.EqualTo(0.0));
-        }
-
-        [Test]
-        public void AddDeviceData_WithNullTemperatureStrings_UsesZeroAsDefault()
-        {
-            // arrange
-            var devices = new List<NeoDevice>
-            {
-                new NeoDevice 
-                { 
-                    DeviceId = 1, 
-                    ZoneName = "Living Room", 
-                    IsThermostat = true,
-                    SetTemp = null,
-                    ActualTemp = null
-                }
-            };
-
-            DeviceStateEntity[] capturedStates = null;
-            _mockDeviceRepository.Setup(r => r.AddDeviceData(It.IsAny<IEnumerable<DeviceStateEntity>>()))
-                .Callback<IEnumerable<DeviceStateEntity>>(states => capturedStates = states.ToArray());
-
-            // act
-            _dataService.AddDeviceData(devices, 10.0);
-
-            // assert
-            Assert.That(capturedStates, Is.Not.Null);
-            Assert.That(capturedStates[0].SetTemp, Is.EqualTo(0.0));
-            Assert.That(capturedStates[0].ActualTemp, Is.EqualTo(0.0));
         }
 
         [Test]
         public void AddDeviceData_WithDecimalTemperatures_ParsesCorrectly()
         {
             // arrange
-            var devices = new List<NeoDevice>
+            var devices = new List<Device>
             {
-                new NeoDevice 
+                new Device 
                 { 
                     DeviceId = 1, 
                     ZoneName = "Living Room", 
                     IsThermostat = true,
-                    SetTemp = "20.75",
-                    ActualTemp = "19.25"
+                    SetTemp = 20.75,
+                    ActualTemp = 19.25
                 }
             };
 
@@ -293,15 +205,15 @@ namespace NeoConnect.UnitTests.Services
         public void AddDeviceData_WithNegativeOutsideTemperature_StoresCorrectly()
         {
             // arrange
-            var devices = new List<NeoDevice>
+            var devices = new List<Device>
             {
-                new NeoDevice 
+                new Device 
                 { 
                     DeviceId = 1, 
                     ZoneName = "Living Room", 
                     IsThermostat = true,
-                    SetTemp = "20.0",
-                    ActualTemp = "19.0"
+                    SetTemp = 20.0,
+                    ActualTemp = 19.0
                 }
             };
 
@@ -320,15 +232,15 @@ namespace NeoConnect.UnitTests.Services
         public void AddDeviceData_WithZeroOutsideTemperature_StoresCorrectly()
         {
             // arrange
-            var devices = new List<NeoDevice>
+            var devices = new List<Device>
             {
-                new NeoDevice 
+                new Device 
                 { 
                     DeviceId = 1, 
                     ZoneName = "Living Room", 
                     IsThermostat = true,
-                    SetTemp = "20.0",
-                    ActualTemp = "19.0"
+                    SetTemp = 20.0,
+                    ActualTemp = 19.0
                 }
             };
 
@@ -347,7 +259,7 @@ namespace NeoConnect.UnitTests.Services
         public void AddDeviceData_WithEmptyDeviceList_CallsRepositoryWithEmptyCollection()
         {
             // arrange
-            var devices = new List<NeoDevice>();
+            var devices = new List<Device>();
 
             DeviceStateEntity[] capturedStates = null;
             _mockDeviceRepository.Setup(r => r.AddDeviceData(It.IsAny<IEnumerable<DeviceStateEntity>>()))
@@ -366,15 +278,15 @@ namespace NeoConnect.UnitTests.Services
         public void AddDeviceData_SetsTimestampToUtcNow()
         {
             // arrange
-            var devices = new List<NeoDevice>
+            var devices = new List<Device>
             {
-                new NeoDevice 
+                new Device 
                 { 
                     DeviceId = 1, 
                     ZoneName = "Living Room", 
                     IsThermostat = true,
-                    SetTemp = "20.0",
-                    ActualTemp = "19.0"
+                    SetTemp = 20.0,
+                    ActualTemp = 19.0
                 }
             };
 
@@ -399,35 +311,35 @@ namespace NeoConnect.UnitTests.Services
         public void AddDeviceData_WithMixedHeatingStates_StoresCorrectly()
         {
             // arrange
-            var devices = new List<NeoDevice>
+            var devices = new List<Device>
             {
-                new NeoDevice 
+                new Device 
                 { 
                     DeviceId = 1, 
                     ZoneName = "Zone 1", 
                     IsThermostat = true,
-                    SetTemp = "20.0",
-                    ActualTemp = "19.0",
+                    SetTemp = 20.0,
+                    ActualTemp = 19.0,
                     IsHeating = true,
                     IsPreheating = false
                 },
-                new NeoDevice 
+                new Device 
                 { 
                     DeviceId = 2, 
                     ZoneName = "Zone 2", 
                     IsThermostat = true,
-                    SetTemp = "18.0",
-                    ActualTemp = "17.0",
+                    SetTemp = 18.0,
+                    ActualTemp = 17.0,
                     IsHeating = false,
                     IsPreheating = true
                 },
-                new NeoDevice 
+                new Device 
                 { 
                     DeviceId = 3, 
                     ZoneName = "Zone 3", 
                     IsThermostat = true,
-                    SetTemp = "19.0",
-                    ActualTemp = "19.0",
+                    SetTemp = 19.0,
+                    ActualTemp = 19.0,
                     IsHeating = false,
                     IsPreheating = false
                 }
@@ -635,15 +547,15 @@ namespace NeoConnect.UnitTests.Services
             // This test verifies the workflow where data is added and then retrieved
             // arrange
             var testDate = DateTime.Today;
-            var devices = new List<NeoDevice>
+            var devices = new List<Device>
             {
-                new NeoDevice 
+                new Device 
                 { 
                     DeviceId = 1, 
                     ZoneName = "Living Room", 
                     IsThermostat = true,
-                    SetTemp = "20.5",
-                    ActualTemp = "19.5",
+                    SetTemp = 20.5,
+                    ActualTemp = 19.5,
                     IsHeating = true,
                     IsPreheating = false
                 }

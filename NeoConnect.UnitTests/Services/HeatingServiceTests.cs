@@ -10,6 +10,7 @@ namespace NeoConnect.UnitTests
         private Mock<INeoHubService> _mockNeoHubService;
         private Mock<IEmailService> _mockEmailService;
         private Mock<IDataService> _mockDataService;
+        private Mock<IImmersionService> _mockImmersionService;
         private Mock<ILogger<HeatingService>> _mockLogger;
         private CancellationTokenSource _cts;
 
@@ -19,10 +20,11 @@ namespace NeoConnect.UnitTests
             _mockNeoHubService = new Mock<INeoHubService>();
             _mockEmailService = new Mock<IEmailService>();
             _mockDataService = new Mock<IDataService>();
+            _mockImmersionService = new Mock<IImmersionService>();
             _mockLogger = new Mock<ILogger<HeatingService>>();
             _mockLogger.Setup(l => l.IsEnabled(It.IsAny<LogLevel>())).Returns(true);
             _cts = new CancellationTokenSource();
-            _heatingService = new HeatingService(_mockLogger.Object, _mockNeoHubService.Object, _mockEmailService.Object, _mockDataService.Object);
+            _heatingService = new HeatingService(_mockLogger.Object, _mockNeoHubService.Object, _mockEmailService.Object, _mockDataService.Object, _mockImmersionService.Object);
         }
 
         [TearDown]
@@ -79,7 +81,7 @@ namespace NeoConnect.UnitTests
             _mockNeoHubService.Setup(n => n.GetEngineersData(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(eng);
 
 
-            var service = new HeatingService(_mockLogger.Object, _mockNeoHubService.Object, _mockEmailService.Object, _mockDataService.Object);
+            var service = new HeatingService(_mockLogger.Object, _mockNeoHubService.Object, _mockEmailService.Object, _mockDataService.Object, _mockImmersionService.Object);
 
             // act
             var result = await service.GetDevices(true, _cts.Token);
@@ -131,7 +133,7 @@ namespace NeoConnect.UnitTests
 
             _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>())).ReturnsAsync(neoDevices);
 
-            var service = new HeatingService(_mockLogger.Object, _mockNeoHubService.Object, _mockEmailService.Object, _mockDataService.Object);
+            var service = new HeatingService(_mockLogger.Object, _mockNeoHubService.Object, _mockEmailService.Object, _mockDataService.Object, _mockImmersionService.Object);
 
             // act
             var result = await service.GetDevices(false, _cts.Token);
@@ -1186,7 +1188,7 @@ namespace NeoConnect.UnitTests
                 _cts.Token), Times.Once);
 
             _mockDataService.Verify(d => d.RefreshDeviceList(
-                It.Is<List<NeoDevice>>(list => list.Count == 3)), Times.Once);
+                It.Is<List<Device>>(list => list.Count == 3)), Times.Once);
         }
 
         [Test]
@@ -1227,7 +1229,7 @@ namespace NeoConnect.UnitTests
 
             // assert
             _mockDataService.Verify(d => d.RefreshDeviceList(
-                It.Is<List<NeoDevice>>(list => list.Count == 0)), Times.Once);
+                It.Is<List<Device>>(list => list.Count == 0)), Times.Once);
         }
 
         [Test]
@@ -1253,6 +1255,32 @@ namespace NeoConnect.UnitTests
             mockConnection.Verify(c => c.Dispose(), Times.Once);
         }
 
+        [Test]
+        public async Task RefreshDeviceList_WhenImmersionDeviceExists_AddsImmersionToDatabaseList()
+        {
+            // arrange
+            var neoDevices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", ActualTemp = "20", SetTemp = "21" }
+            };
+            var immersionDevice = new Device { DeviceId = 999, ZoneName = "Immersion" };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(neoDevices);
+            _mockImmersionService.Setup(i => i.GetDevice())
+                .Returns(immersionDevice);
+
+            // act
+            await _heatingService.RefreshDeviceList(_cts.Token);
+
+            // assert
+            _mockDataService.Verify(d => d.RefreshDeviceList(
+                It.Is<List<Device>>(list =>
+                    list.Count == 2 &&
+                    list.Any(x => x.ZoneName == "Living Room") &&
+                    list.Any(x => x.ZoneName == "Immersion"))), Times.Once);
+        }
+
         #endregion
 
         #region LogDeviceStatuses Tests
@@ -1275,7 +1303,7 @@ namespace NeoConnect.UnitTests
 
             // assert
             _mockDataService.Verify(d => d.AddDeviceData(
-                It.Is<IEnumerable<NeoDevice>>(list => list.Count() == 1 && list.First().ZoneName == "Living Room"),
+                It.Is<IEnumerable<Device>>(list => list.Count() == 1 && list.First().ZoneName == "Living Room"),
                 0), Times.Once);
         }
 
@@ -1297,7 +1325,7 @@ namespace NeoConnect.UnitTests
 
             // assert
             _mockDataService.Verify(d => d.AddDeviceData(
-                It.Is<IEnumerable<NeoDevice>>(list => list.Count() == 1 && list.First().ZoneName == "Living Room"),
+                It.Is<IEnumerable<Device>>(list => list.Count() == 1 && list.First().ZoneName == "Living Room"),
                 0), Times.Once);
         }
 
@@ -1342,7 +1370,7 @@ namespace NeoConnect.UnitTests
 
             // assert
             _mockDataService.Verify(d => d.AddDeviceData(
-                It.IsAny<IEnumerable<NeoDevice>>(),
+                It.IsAny<IEnumerable<Device>>(),
                 0), Times.Once);
         }
 
@@ -1364,7 +1392,7 @@ namespace NeoConnect.UnitTests
 
             // assert
             _mockDataService.Verify(d => d.AddDeviceData(
-                It.Is<IEnumerable<NeoDevice>>(list => list.Count() == 0),
+                It.Is<IEnumerable<Device>>(list => list.Count() == 0),
                 0), Times.Once);
         }
 
@@ -1410,6 +1438,33 @@ namespace NeoConnect.UnitTests
             _mockNeoHubService.Verify(n => n.GetDevices(
                 It.IsAny<INeoConnection>(),
                 _cts.Token), Times.Once);
+        }
+
+        [Test]
+        public async Task LogDeviceStatuses_WhenImmersionDeviceExists_AddsImmersionToLoggedList()
+        {
+            // arrange
+            var neoDevices = new List<NeoDevice>()
+            {
+                new() { DeviceId = 1, ZoneName = "Living Room", IsOffline = false, ActiveProfile = 1, IsStandby = false }
+            };
+            var immersionDevice = new Device { DeviceId = 999, ZoneName = "Immersion" };
+
+            _mockNeoHubService.Setup(n => n.GetDevices(It.IsAny<INeoConnection>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(neoDevices);
+            _mockImmersionService.Setup(i => i.GetDevice())
+                .Returns(immersionDevice);
+
+            // act
+            await _heatingService.LogDeviceStatuses(_cts.Token);
+
+            // assert
+            _mockDataService.Verify(d => d.AddDeviceData(
+                It.Is<IEnumerable<Device>>(list =>
+                    list.Count() == 2 &&
+                    list.Any(x => x.ZoneName == "Living Room") &&
+                    list.Any(x => x.ZoneName == "Immersion")),
+                0), Times.Once);
         }
 
         #endregion

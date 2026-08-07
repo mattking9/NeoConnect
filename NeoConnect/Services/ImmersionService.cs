@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace NeoConnect
 {
     public class ImmersionService : IImmersionService
-    {
+    {        
         private readonly ILogger<ImmersionService> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
         
@@ -13,6 +13,8 @@ namespace NeoConnect
         private readonly string _accessSecret;
         private readonly string _deviceId;
         private readonly string _tuyaHost;
+
+        private bool isOn;
 
         public ImmersionService(IConfiguration configuration, ILogger<ImmersionService> logger, IHttpClientFactory httpClientFactory)
         {
@@ -127,12 +129,19 @@ namespace NeoConnect
                 {
                     throw new HttpRequestException($"Failed to turn {(state ? "ON" : "OFF")} Immersion switch. Message: {responseContent.Msg}.");
                 }
+
+                isOn = state;
             }
             else
             {
                 throw new Exception("Tuya API request failed with status code: " + response.StatusCode);
             }
 
+        }
+
+        public Device GetDevice()
+        {
+            return new Device() { DeviceId = int.MaxValue, ZoneName = "Immersion", IsHeating = isOn };
         }
 
         static string GetTimestamp()
