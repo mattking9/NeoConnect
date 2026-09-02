@@ -12,7 +12,7 @@ namespace NeoConnect
     [JsonSerializable(typeof(Dictionary<string, EngineersData>))]
     [JsonSerializable(typeof(Dictionary<string, Profile>))]
     [JsonSerializable(typeof(Dictionary<string, int>))]
-    [JsonSerializable(typeof(FoxEssApiResponse))]
+    [JsonSerializable(typeof(FoxEssApiResponse<>))]
     [JsonSerializable(typeof(TuyaApiResponse))]
     internal partial class NeoConnectJsonContext : JsonSerializerContext
     {

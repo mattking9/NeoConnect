@@ -1,7 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace NeoConnect
 {
@@ -32,23 +31,66 @@ namespace NeoConnect
         public async Task<SolarData> GetRealtimeData(CancellationToken stoppingToken)
         {
             var path = "/op/v1/device/real/query";
+            var body = new
+            {
+                sns = new string[] { _deviceSerialNr },
+                variables = new string[] { GenerationPower, FeedinPower, SoC, LoadPower }
+            };
 
+            var responseContent = await SendFoxEssRequestAsync<List<ResultType>>(path, body, stoppingToken);
+            var result = responseContent.Result[0];
+            return new SolarData
+            {
+                GeneratedPower = result.Datas.Find(d => d.Variable == GenerationPower).Value,
+                FeedInPower = result.Datas.Find(d => d.Variable == FeedinPower).Value,
+                SoC = result.Datas.Find(d => d.Variable == SoC).Value,
+                Load = result.Datas.Find(d => d.Variable == LoadPower).Value,
+                Timestamp = DateTime.Parse(result.Time.Substring(0, 19))
+            };
+        }
+
+        public async Task SetForceChargeWindow(int enable, int startHour, int startMinute, int endHour, int endMinute, CancellationToken stoppingToken)
+        {
+            var path = "/op/v2/device/scheduler/enable";
+
+            var body = new
+            {
+                deviceSN = _deviceSerialNr,
+                groups = new object[]
+                {
+                    new
+                    {
+                        enable,
+                        startHour,
+                        startMinute,
+                        endHour,
+                        endMinute,
+                        workMode = "ForceCharge",
+                        minSocOnGrid = 10,
+                        fdSoc = 100,
+                        fdPwr = 5000
+                    }
+                }
+            };
+
+            var responseContent = await SendFoxEssRequestAsync<object>(path, body, stoppingToken);
+        }
+
+        private string CreateSignature(string token, long timestamp, string path)
+        {
+            // Use CRLF between parts and the supplied token
+            var signature = $"{path}\r\n{token}\r\n{timestamp}";
+            //create a hash of the signature string using the MD5 algorithm
+            return CreateHash(signature);
+        }
+
+        private async Task<FoxEssApiResponse<T>> SendFoxEssRequestAsync<T>(string path, object body, CancellationToken cancellationToken) where T : class
+        {
             using (var client = _httpClientFactory.CreateClient())
             {
-                var content = JsonContent.Create(new
-                {
-                    sns = new string[] {
-                        _deviceSerialNr,
-                    },
-                    variables = new string[] {
-                        GenerationPower,
-                        FeedinPower,
-                        SoC,
-                        LoadPower
-                    }
-                });
+                var content = JsonContent.Create(body);
 
-                _logger.LogDebug("Posting request to foxesscloud for realtime data...");
+                _logger.LogDebug($"Posting request to foxesscloud: {path}...");
 
                 var url = new Uri(_host + path);
                 var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -59,53 +101,35 @@ namespace NeoConnect
                 content.Headers.Add("signature", signature);
                 content.Headers.Add("lang", "en");
 
-                var response = await client.PostAsync(url, content, stoppingToken);
+                var response = await client.PostAsync(url, content, cancellationToken);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    // Read the response content
-                    var responseContent = await response.Content.ReadFromJsonAsync<FoxEssApiResponse>();
-                    if (responseContent == null)
-                    {
-                        throw new Exception("Unable to succesfully deserialize the response into a FoxEssApiResponse object.");
-                    }
-
-                    if (_logger.IsEnabled(LogLevel.Debug))
-                    {
-                        var options = new JsonSerializerOptions
-                        {
-                            WriteIndented = true
-                        };
-                        _logger.LogDebug($"FoxESS Response: {JsonSerializer.Serialize(responseContent, options)}");
-                    }
-
-                    if (responseContent.Errno != 0)
-                    {
-                        throw new HttpRequestException($"Error calling FoxESS Cloud API: ({responseContent.Errno}) {responseContent.Msg}");
-                    }
-
-                    var result = responseContent.Result[0];
-                    return new SolarData
-                    {
-                        GeneratedPower = result.Datas.Find(d => d.Variable == GenerationPower).Value,
-                        FeedInPower = result.Datas.Find(d => d.Variable == FeedinPower).Value,
-                        SoC = result.Datas.Find(d => d.Variable == SoC).Value,
-                        Load = result.Datas.Find(d => d.Variable == LoadPower).Value,    
-                        Timestamp = DateTime.Parse(result.Time.Substring(0, 19))
-                    };
-                }
-                else
+                if (!response.IsSuccessStatusCode)
                 {
                     throw new Exception("Request failed with status code: " + response.StatusCode);
                 }
-            }
-        }
 
-        private string CreateSignature(string token, long timestamp, string path)
-        {
-            var signature = $@"{path}\r\n{_token}\r\n{timestamp}";
-            //create a hash of the signature string using the MD5 algorithm
-            return CreateHash(signature);
+                var responseContent = await response.Content.ReadFromJsonAsync<FoxEssApiResponse<T>>(cancellationToken: cancellationToken);
+                if (responseContent == null)
+                {
+                    throw new Exception("Unable to succesfully deserialize the response into a FoxEssApiResponse object.");
+                }
+
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    var options = new JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    };
+                    _logger.LogDebug($"FoxESS Response: {JsonSerializer.Serialize(responseContent, options)}");
+                }
+
+                if (responseContent.Errno != 0)
+                {
+                    throw new HttpRequestException($"Error calling FoxESS Cloud API: ({responseContent.Errno}) {responseContent.Msg}");
+                }
+
+                return responseContent;
+            }
         }
 
         private string CreateHash(string inputString)
