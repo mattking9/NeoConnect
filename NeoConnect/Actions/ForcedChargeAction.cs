@@ -1,15 +1,19 @@
 namespace NeoConnect
 {
-    /// <summary>
-    /// Represents a scheduled action that adjusts heating settings globally based on weather forecasts.
-    /// </summary>
-    /// <remarks>This action retrieves the weather forecast and adjusts the heating system's settings
-    /// accordingly. The schedule for this action is configured via the application settings.</remarks>
     public class ForcedChargeAction : ScheduledAction
     {
+        private const double _batteryCapacitykWh = 5.7;
+        private const int _minimumSoc = 16;  // Always charge to this percentage as a minimum.
+        private const double _estimatedConsumptionkWh = 12.0; // Estimated house usage, based on Average (kWh)
+        private const int _startHour = 2; // super offpeak starts at 2am
+        private const int _startMinute = 2; // but start at 2 minutes past
+        private const int _endHour = 4; // super offpeak ends at 5am
+        private const int _endMinute = 58; // but end at 2 minutes to hour
+
         private readonly IConfiguration _config;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly ILogger<ForcedChargeAction> _logger;
+
         public ForcedChargeAction(IConfiguration config, IServiceScopeFactory serviceScopeFactory, ILogger<ForcedChargeAction> logger, IEmailService emailService)
             : base(logger, emailService)
         {
@@ -30,59 +34,39 @@ namespace NeoConnect
         {
             using (var scope = _serviceScopeFactory.CreateScope())
             {
-                var solarService = scope.ServiceProvider.GetRequiredService<ISolarService>();
+                var foxEssService = scope.ServiceProvider.GetRequiredService<ISolarService>();
                 var solarForecastService = scope.ServiceProvider.GetRequiredService<ISolarForecastService>();
 
                 // Get the solar forecast
-                double expectedSolarKwh = await solarForecastService.GetSolarEstimate(stoppingToken);                
-
-                // Get the current battery state of charge (SoC) and capacity from FoxESS API
-                var solarData = await solarService.GetRealtimeData(stoppingToken);
-                double currentSoC = Convert.ToDouble(solarData.SoC); // Current battery state of charge in percentage
-
-                double batteryCapacitykWh = 5.7;
-                int minimumSoc = 20;  // Always charge to this percentage as a minimum                
-                double expectedLoadkWh = 12.0; // Estimated house usage, based on Average (kWh)
-
-                // Calculate Requirement
-                double minimumBatterykWh = batteryCapacitykWh * (minimumSoc / 100.0);
-                double currentBatterykWh = batteryCapacitykWh * (currentSoC / 100.0);
-                double netEnergy = currentBatterykWh + expectedSolarKwh - expectedLoadkWh;
-
-                double gridChargeNeededKwh = 0.0;
-
-                if (netEnergy < minimumBatterykWh)
+                double forecastedSolarGenerationkWh = await solarForecastService.GetSolarEstimate(stoppingToken);
+                if (forecastedSolarGenerationkWh == 0.0)
                 {
-                    gridChargeNeededKwh = minimumBatterykWh - netEnergy;
-
-                    // Cap it at maximum physical headroom
-                    double maxPhysicalChargePossible = batteryCapacitykWh - currentBatterykWh;
-                    gridChargeNeededKwh = Math.Min(gridChargeNeededKwh, maxPhysicalChargePossible);
+                    _logger.LogWarning($"Unable to retreive Solar Estimate. Will use yesterday's Force Charge settings.");
+                    return;
                 }
 
-                // Schedule the window on FoxESS                
-                double chargeRateKw = 4; // This is determined in the Fox ESS App
-                double hoursRequired = gridChargeNeededKwh / chargeRateKw;
+                // Calculate how much net energy the house needs beyond what solar is expected to produce                                                             
+                var solarShortfallkWh = _estimatedConsumptionkWh - forecastedSolarGenerationkWh;
 
-                Console.WriteLine($"Action Required: Charge {gridChargeNeededKwh:F2} kWh from grid.");
-                Console.WriteLine($"Charging for {hoursRequired:F2} hours.");
-
-                int startHour = 2; // super offpeak starts at 2am
-                int startMinute = 10; // but start at 10 past hour
-                int maxEndHour = 4; // super offpeak ends at 5am
-                int maxEndMinute = 50; // but end at 10 to hour
-
-                TimeSpan startTime = new TimeSpan(startHour, startMinute, 0);
-                TimeSpan endTime = startTime.Add(TimeSpan.FromHours(hoursRequired));
-                TimeSpan maxEndTime = new TimeSpan(maxEndHour, maxEndMinute, 0);
-
-                // Ensure that end time cannot exceed off peak window
-                if (endTime > maxEndTime)
+                // If solar covers the entire day's consumption, the deficit is zero
+                if (solarShortfallkWh < 0)
                 {
-                    endTime = maxEndTime;
+                    solarShortfallkWh = 0;
                 }
 
-                await solarService.SetForceChargeWindow(endTime != startTime ? 1 : 0, startHour, startMinute, endTime.Hours, endTime.Minutes, stoppingToken);               
+                // Calculate target SOC percentage needed to cover solar shortfall
+                int targetSoc = (int)Math.Round((solarShortfallkWh / _batteryCapacitykWh) * 100);
+
+                // We can't use the last 10 percent of the battery, so we need to reserve it.
+                targetSoc += 10;
+
+                // Ensure target SOC is within valid range
+                targetSoc = Math.Clamp(targetSoc, _minimumSoc, 100);
+
+                _logger.LogInformation($"Target SOC at end of offpeak period: {targetSoc}%.");
+
+                // Schedule the window on FoxESS
+                await foxEssService.SetForceChargeWindow(_startHour, _startMinute, _endHour, _endMinute, targetSoc, stoppingToken);
             }
         }             
     }

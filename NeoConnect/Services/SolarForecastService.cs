@@ -33,8 +33,6 @@ namespace NeoConnect
             {
                 using (var client = _httpClientFactory.CreateClient())
                 {
-
-
                     _logger.LogDebug($"Posting request to solar forecast api: {path}...");
 
                     var url = new Uri(_host + path);
@@ -61,14 +59,14 @@ namespace NeoConnect
                         return totalWh / 1000.0;
                     }
 
-                    Console.WriteLine($"Warning: No solar data found for date {todayString}. Defaulting to 0.");
+                    _logger.LogWarning($"No solar data found for date {todayString}. Defaulting to 0.");
                     return 0.0;
 
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error fetching solar forecast: {ex.Message}");
+                _logger.LogError($"Error fetching solar forecast: {ex.Message}");
                 // Return 0 on failure to ensure your automation triggers a safe grid top-up
                 return 0.0;
             }

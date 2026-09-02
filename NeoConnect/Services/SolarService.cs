@@ -49,9 +49,9 @@ namespace NeoConnect
             };
         }
 
-        public async Task SetForceChargeWindow(int enable, int startHour, int startMinute, int endHour, int endMinute, CancellationToken stoppingToken)
+        public async Task SetForceChargeWindow(int startHour, int startMinute, int endHour, int endMinute, int targetSoc, CancellationToken stoppingToken)
         {
-            var path = "/op/v2/device/scheduler/enable";
+            var path = "/op/v3/device/scheduler/enable";
 
             var body = new
             {
@@ -60,15 +60,15 @@ namespace NeoConnect
                 {
                     new
                     {
-                        enable,
                         startHour,
                         startMinute,
                         endHour,
                         endMinute,
                         workMode = "ForceCharge",
-                        minSocOnGrid = 10,
-                        fdSoc = 100,
-                        fdPwr = 5000
+                        extraParam = new
+                        {
+                            fdSoc = targetSoc
+                        }
                     }
                 }
             };
