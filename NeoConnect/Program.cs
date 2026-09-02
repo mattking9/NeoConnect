@@ -38,18 +38,18 @@ builder.Services.AddSingleton<BathroomBoostAction>();
 builder.Services.AddSingleton<GlobalHoldAction>();
 builder.Services.AddSingleton<ReportDataCollectionAction>();
 builder.Services.AddSingleton<RunImmersionAction>();
-builder.Services.AddSingleton<ForcedChargeAction>();
+builder.Services.AddSingleton<BatteryChargeAction>();
 builder.Services.AddScoped<IScheduledAction>(sp => sp.GetRequiredService<BathroomBoostAction>());
 builder.Services.AddScoped<IScheduledAction>(sp => sp.GetRequiredService<GlobalHoldAction>());
 builder.Services.AddScoped<IScheduledAction>(sp => sp.GetRequiredService<ReportDataCollectionAction>());
 builder.Services.AddScoped<IScheduledAction>(sp => sp.GetRequiredService<RunImmersionAction>());
-builder.Services.AddScoped<IScheduledAction>(sp => sp.GetRequiredService<ForcedChargeAction>());
+builder.Services.AddScoped<IScheduledAction>(sp => sp.GetRequiredService<BatteryChargeAction>());
 
 builder.Services.AddHostedService<ScheduledWorker<BathroomBoostAction>>();
 builder.Services.AddHostedService<ScheduledWorker<GlobalHoldAction>>();
 builder.Services.AddHostedService<ScheduledWorker<ReportDataCollectionAction>>();
 builder.Services.AddHostedService<ScheduledWorker<RunImmersionAction>>();
-builder.Services.AddHostedService<ScheduledWorker<ForcedChargeAction>>();
+builder.Services.AddHostedService<ScheduledWorker<BatteryChargeAction>>();
 
 builder.Services.AddControllers();
 

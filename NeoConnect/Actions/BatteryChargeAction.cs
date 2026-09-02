@@ -1,6 +1,6 @@
 namespace NeoConnect
 {
-    public class ForcedChargeAction : ScheduledAction
+    public class BatteryChargeAction : ScheduledAction
     {
         private const double _batteryCapacitykWh = 5.7;
         private const int _minimumSoc = 16;  // Always charge to this percentage as a minimum.
@@ -12,9 +12,9 @@ namespace NeoConnect
 
         private readonly IConfiguration _config;
         private readonly IServiceScopeFactory _serviceScopeFactory;
-        private readonly ILogger<ForcedChargeAction> _logger;
+        private readonly ILogger<BatteryChargeAction> _logger;
 
-        public ForcedChargeAction(IConfiguration config, IServiceScopeFactory serviceScopeFactory, ILogger<ForcedChargeAction> logger, IEmailService emailService)
+        public BatteryChargeAction(IConfiguration config, IServiceScopeFactory serviceScopeFactory, ILogger<BatteryChargeAction> logger, IEmailService emailService)
             : base(logger, emailService)
         {
             _config = config;
@@ -22,13 +22,13 @@ namespace NeoConnect
             _logger = logger;
         }
 
-        public override string Id => "forced_charge";
+        public override string Id => "battery_charge";
 
-        public override string Name => "Forced Charge";
+        public override string Name => "Battery Charge";
 
         public override string Description => "Forces the solar battery to charge from the grid based on the expected amount of sunlight for the day ahead.";
 
-        public override string? Schedule => _config["ForcedChargeSchedule"];
+        public override string? Schedule => _config["BatteryChargeSchedule"];
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken, bool isManualTrigger = false)
         {
